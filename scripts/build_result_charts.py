@@ -144,7 +144,7 @@ def extract():
 
     comparison = {
         "reference": "Soniox",
-        "aggregation": "Equal-weight mean of Czech and Slovak number-normalized word disagreement",
+        "aggregation": "Macro-averaged WER across Czech and Slovak",
         "normalization": normalizer.VERSION,
         "recordings": 2,
         "duration_seconds": 0,
@@ -216,7 +216,16 @@ def extract():
         assert math.isclose(row["number_normalized_wer"], row["number_normalized_errors"] / row["reference_words"])
         assert math.isclose(row["der_250ms"], row["diarization_error_seconds"] / row["speaker_seconds"])
     data = {
-        "schema_version": 2,
+        "schema_version": 3,
+        "wer_definition": {
+            "name": "Word error rate", "abbreviation": "WER", "unit": "percent",
+            "formula": "100 * (substitutions + deletions + insertions) / reference_tokens",
+            "alignment": "Minimum unit-cost Levenshtein alignment of preprocessed word-token sequences",
+            "text_preprocessing": normalizer.VERSION,
+            "reference_length": "Number of reference tokens after applying the same preprocessing to reference and hypothesis",
+            "marker_aggregation": "Arithmetic mean of the Czech and Slovak WERs (macro-average)",
+            "cohort_aggregation": "Sum of per-recording edit counts divided by sum of reference-token counts (corpus WER)",
+        },
         "source_report_updated_at": report["updated_at"],
         "recommended_checkpoint": candidate["checkpoint"],
         "model_revision": candidate["model_revision"],
@@ -323,7 +332,7 @@ def commercial_chart(data):
         ax.barh(y, value, height=.52, color=COLORS[key], edgecolor="0.25", linewidth=.45, hatch=HATCHES[key])
         ax.text(value + max(values) * .025, y, f"{value:.2f}", va="center", fontsize=10)
     ax.set(yticks=range(len(keys)), yticklabels=[LABELS[k] for k in keys],
-           xlabel="Normalized WER vs. Soniox (%)", xlim=(0, max(values) * 1.18))
+           xlabel="Macro-averaged WER (%)", xlim=(0, max(values) * 1.18))
     ax.invert_yaxis()
     style_axes(ax, "x")
     return fig
@@ -344,7 +353,7 @@ def language_chart(data):
         style_axes(ax)
         ax.set(xticks=range(len(keys)), xticklabels=[{"gemini": "Gemini", "whisper": "Whisper", "vanilla": "VibeVoice", "450h": "Ours"}[k] for k in keys],
                ylim=(0, ymax * 1.2), title=title)
-    axes[0].set_ylabel("Normalized WER vs. Soniox (%)")
+    axes[0].set_ylabel("Word error rate (%)")
     return fig
 
 
@@ -359,7 +368,7 @@ def progress_chart(data):
         ax.text(x, value + max(values) * .025, f"{value:.2f}", ha="center", fontsize=10)
     style_axes(ax)
     ax.set(xticks=range(len(keys)), xticklabels=[LABELS[k].replace("Whisper large-v3-turbo", "Whisper\nlarge-v3-turbo").replace("VibeVoice-ASR", "VibeVoice\nASR") for k in keys],
-           ylim=(0, max(values) * 1.2), ylabel="Normalized WER vs. Soniox (%)")
+           ylim=(0, max(values) * 1.2), ylabel="Corpus WER (%)")
     return fig
 
 
@@ -373,7 +382,7 @@ def tradeoff_chart(data):
         ax.scatter(x, y, s=35, marker=marker, color=COLORS[key], edgecolor="0.25", linewidth=.45, zorder=3)
         ax.annotate(LABELS[key], (x, y), xytext=offset, textcoords="offset points", fontsize=9, va="center")
     style_axes(ax, "both")
-    ax.set(xlim=(5.7, 8.4), ylim=(6.2, 14.5), xlabel="Number-normalized WER (%)",
+    ax.set(xlim=(5.7, 8.4), ylim=(6.2, 14.5), xlabel="Corpus WER (%)",
            ylabel="Diarization error rate (%)")
     return fig
 
@@ -381,19 +390,19 @@ def tradeoff_chart(data):
 def export_table(data):
     with (OUT / "values.csv").open("w", newline="") as handle:
         writer = csv.writer(handle, lineterminator="\n")
-        writer.writerow(["comparison", "model", "language", "metric", "numerator", "denominator", "percent"])
+        writer.writerow(["comparison", "model", "language", "metric", "numerator", "denominator", "percent", "aggregation", "text_preprocessing"])
         for name, model in data["commercial_comparison"]["models"].items():
             for lang, row in model["languages"].items():
-                writer.writerow(["dialogue_markers", name, lang, "number_normalized_word_disagreement", row["word_errors"], row["reference_words"], 100 * row["word_errors"] / row["reference_words"]])
-            writer.writerow(["dialogue_markers", name, "balanced_cs_sk", "number_normalized_word_disagreement", "", "", 100 * balanced_wer(model["languages"])])
+                writer.writerow(["dialogue_markers", name, lang, "wer", row["word_errors"], row["reference_words"], 100 * row["word_errors"] / row["reference_words"], "per_language", data["commercial_comparison"]["normalization"]])
+            writer.writerow(["dialogue_markers", name, "balanced_cs_sk", "wer", "", "", 100 * balanced_wer(model["languages"]), "macro_by_language", data["commercial_comparison"]["normalization"]])
         for name, row in data["checkpoint_comparison"]["models"].items():
             for metric, numerator, denominator in [
-                ("number_normalized_wer", "word_errors", "reference_words"),
+                ("wer", "word_errors", "reference_words"),
                 ("der_250ms", "diarization_error_seconds", "speaker_seconds"),
             ]:
-                writer.writerow(["new_confirmation", name, "pooled_cs_sk", metric, row[numerator], row[denominator], 100 * row[numerator] / row[denominator]])
+                writer.writerow(["new_confirmation", name, "pooled_cs_sk", metric, row[numerator], row[denominator], 100 * row[numerator] / row[denominator], "corpus" if metric == "wer" else "pooled_speaker_time", data["commercial_comparison"]["normalization"] if metric == "wer" else ""])
         for name, row in data["checkpoint_comparison"].get("baselines", {}).items():
-            writer.writerow(["new_confirmation", name, "pooled_cs_sk", "number_normalized_wer", row["word_errors"], row["reference_words"], 100 * row["word_errors"] / row["reference_words"]])
+            writer.writerow(["new_confirmation", name, "pooled_cs_sk", "wer", row["word_errors"], row["reference_words"], 100 * row["word_errors"] / row["reference_words"], "corpus", data["commercial_comparison"]["normalization"]])
 
 
 def update_readme_tables(data):
@@ -401,12 +410,12 @@ def update_readme_tables(data):
     if not path.exists():
         return
     text = path.read_text()
-    model_lines = ["| Model | Czech WER | Slovak WER | Mean WER |", "|---|---:|---:|---:|"]
+    model_lines = ["| Model | Czech WER (%) | Slovak WER (%) | Macro-averaged WER (%) |", "|---|---:|---:|---:|"]
     for key in marker_keys(data):
         row = data["commercial_comparison"]["models"][key]
         values = [100 * row["languages"][lang]["word_errors"] / row["languages"][lang]["reference_words"] for lang in LANGUAGES]
         model_lines.append(f"| {LABELS[key]} | {values[0]:.2f} | {values[1]:.2f} | {100 * balanced_wer(row['languages']):.2f} |")
-    checkpoint_lines = ["| Model | WER | DER | Scored recordings |", "|---|---:|---:|---:|"]
+    checkpoint_lines = ["| Model | Corpus WER (%) | DER (%) | Scored recordings |", "|---|---:|---:|---:|"]
     cohort = data["checkpoint_comparison"]
     rows = {**cohort.get("baselines", {}), **cohort["models"]}
     for key in (["whisper"] if "whisper" in rows else []) + list(MODELS):

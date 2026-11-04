@@ -1,13 +1,13 @@
 # ASR
 
-Czech and Slovak speech recognition experiments: data collection, QLoRA fine-tuning of VibeVoice-ASR, and evaluation against fixed Soniox transcripts.
+Czech and Slovak speech recognition experiments: data collection, QLoRA fine-tuning of VibeVoice-ASR, and reproducible evaluation.
 
 ## Model comparison
 
-Number-normalized word error rate (WER), in percent. Lower is better.
+Word error rate (WER), reported as a percentage. Lower is better. Text preprocessing and reference provenance are specified in the [evaluation protocol](charts/README.md#methods).
 
 <!-- MODEL_TABLE_START -->
-| Model | Czech WER | Slovak WER | Mean WER |
+| Model | Czech WER (%) | Slovak WER (%) | Macro-averaged WER (%) |
 |---|---:|---:|---:|
 | Gemini 4 Argon | 0.85 | 0.00 | 0.42 |
 | Whisper large-v3-turbo | 2.75 | 2.64 | 2.70 |
@@ -17,7 +17,7 @@ Number-normalized word error rate (WER), in percent. Lower is better.
 
 ![Mean word error rate](charts/01-commercial-open-source.png)
 
-**Figure 1.** Mean of the Czech and Slovak WERs. All models use the same audio, reference transcripts, and text normalization. Soniox supplies the reference and is not scored against itself.
+**Figure 1.** Macro-averaged WER: the arithmetic mean of the Czech and Slovak WERs, with equal weight per language. All systems are evaluated on identical recordings using a shared scoring protocol.
 
 ![Word error rate by language](charts/02-language-comparison.png)
 
@@ -26,7 +26,7 @@ Number-normalized word error rate (WER), in percent. Lower is better.
 ## Checkpoint comparison
 
 <!-- CHECKPOINT_TABLE_START -->
-| Model | WER | DER | Scored recordings |
+| Model | Corpus WER (%) | DER (%) | Scored recordings |
 |---|---:|---:|---:|
 | Whisper large-v3-turbo | 8.95 | — | 8/8 |
 | VibeVoice-ASR | 7.52 | 7.14 | 8/8 |
@@ -37,11 +37,11 @@ Number-normalized word error rate (WER), in percent. Lower is better.
 
 ![Checkpoint word error rate](charts/03-checkpoint-progress.png)
 
-**Figure 3.** Word error rate on the common confirmation recordings. WER pools word edits and reference words. The 450h checkpoint is the candidate selected by the saved release evaluation.
+**Figure 3.** Corpus WER on the common confirmation recordings: total word edits divided by total reference tokens, expressed as a percentage. The 450h checkpoint is the candidate selected by the saved release evaluation.
 
 ![Word and diarization error rates](charts/04-text-speaker-tradeoff.png)
 
-**Figure 4.** WER and diarization error rate (DER, 250 ms collar) on the same recordings. Lower values are better on both axes. Whisper does not produce speaker labels in this run and has no DER value.
+**Figure 4.** Corpus WER and diarization error rate (DER, 250 ms collar) on the same recordings. Lower values are better on both axes. Whisper does not produce speaker labels in this run and has no DER value.
 
 [Vector figures and PDF](charts/README.md) · [All figures as one PDF](charts/asr-results.pdf) · [Numeric values](charts/values.csv) · [Methods and provenance](charts/README.md#methods) · [Full release evaluation](experiments/qda-v1-release-eval/report.md)
 

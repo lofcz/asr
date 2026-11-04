@@ -1,11 +1,22 @@
 {
-  "schema_version": 2,
+  "schema_version": 3,
+  "wer_definition": {
+    "name": "Word error rate",
+    "abbreviation": "WER",
+    "unit": "percent",
+    "formula": "100 * (substitutions + deletions + insertions) / reference_tokens",
+    "alignment": "Minimum unit-cost Levenshtein alignment of preprocessed word-token sequences",
+    "text_preprocessing": "cs-sk-cardinals-v1",
+    "reference_length": "Number of reference tokens after applying the same preprocessing to reference and hypothesis",
+    "marker_aggregation": "Arithmetic mean of the Czech and Slovak WERs (macro-average)",
+    "cohort_aggregation": "Sum of per-recording edit counts divided by sum of reference-token counts (corpus WER)"
+  },
   "source_report_updated_at": 1792902789.150854,
   "recommended_checkpoint": "450h",
   "model_revision": "d0c9efdb8d614685062c04425d91e01b6f37d944",
   "commercial_comparison": {
     "reference": "Soniox",
-    "aggregation": "Equal-weight mean of Czech and Slovak number-normalized word disagreement",
+    "aggregation": "Macro-averaged WER across Czech and Slovak",
     "normalization": "cs-sk-cardinals-v1",
     "recordings": 2,
     "duration_seconds": 688.671,

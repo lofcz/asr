@@ -13,11 +13,35 @@ Paper-style figures with white backgrounds, standard axes, direct values, and co
 
 ## Methods
 
-**Reference and scoring.** Soniox transcripts are held fixed. All systems use the existing `cs-sk-cardinals-v1` number normalizer: punctuation and case are normalized, numeric variants are standardized, and diacritics remain significant. WER is the word-level edit distance divided by reference word count. Soniox is the reference provider, not a competitor with an assigned zero error rate.
+**Metric.** We report word error rate (WER), using the standard edit-count definition employed in [NIST OpenASR evaluation](https://tsapps.nist.gov/publication/get_pdf.cfm?pub_id=934557):
+
+$$
+\mathrm{WER}(r,h) = 100\,\frac{S+D+I}{N}\;\%,
+$$
+
+where $S$, $D$, and $I$ are the substitutions, deletions, and insertions in a minimum-cost word-token alignment, and $N$ is the number of reference tokens. Each edit has unit cost. Reference $r$ and hypothesis $h$ undergo the same text preprocessing before alignment; $N$ is counted after that preprocessing. Text normalization is part of the evaluation protocol, not the name of a separate metric. Insertions can make WER exceed 100%.
+
+**Text preprocessing.** The versioned [`cs-sk-cardinals-v1` implementation](../experiments/periodic-eval/number_wer.py) applies Unicode NFC and case folding, tokenizes Unicode word sequences, and maps supported Czech/Slovak cardinal expressions and integers from 0 to 9999 to shared numeric tokens. Selected inflected forms are included; diacritics remain significant. Ordinary punctuation is excluded, while recognized decimal, date, ordinal-number, and leading-zero numeric tokens are retained without cardinal conversion. Unsupported numeral expressions are not standardized. Reference chunks in the dialogue recordings are concatenated losslessly; model segments and corpus reference segments are joined with whitespace. Explicit non-speech event tags are excluded according to the existing scorer. These are project-specific preprocessing rules, not a claim of equivalence to another benchmark's scoring protocol.
+
+**Aggregation.** Figure 1 reports the macro-average over languages, not a pooled WER:
+
+$$
+\mathrm{WER}_{\mathrm{macro}} = \tfrac12\left(\mathrm{WER}_{\mathrm{cs}}+\mathrm{WER}_{\mathrm{sk}}\right).
+$$
+
+Figures 3–4 report corpus WER, computed by aligning each recording separately and pooling its edit counts and reference-token counts:
+
+$$
+\mathrm{WER}_{\mathrm{corpus}} = 100\,\frac{\sum_u(S_u+D_u+I_u)}{\sum_u N_u}\;\%.
+$$
+
+Corpus WER is not the unweighted mean of recording-level WERs. Figure 2 reports the per-language values. All figure labels and table headings name the metric or its aggregation; preprocessing details remain here in the evaluation protocol.
+
+**Reference provenance.** Soniox supplied the fixed machine-generated reference transcripts. They are used as the scoring reference for every system. Their origin affects interpretation of the measurements, not the definition or name of WER; no reference-provider self-score is reported.
 
 **Model comparison.** Figures 1–2 use two generated dialogue recordings, one Czech and one Slovak: 11.48 minutes and 1,776 reference words. Figure 1 averages the two language WERs equally. The Gemini score uses the saved independent transcription before adjudication. VibeVoice-ASR and the 450h QLoRA checkpoint use the saved outputs from the release evaluation. These dialogue recordings were excluded from training but repeatedly used as development markers.
 
-**Checkpoint comparison.** Figures 3–4 use all eight `new-confirmation` recordings in the saved release evaluation: four per language, 79.83 minutes and 11,271 normalized reference words. Every plotted WER covers the same recordings. WER pools edit counts and reference words; DER pools diarization-error seconds and scored speaker seconds, with a 250 ms collar. One of the eight scored 450h outputs is not strictly valid in its original form; the source evaluation records this separately. This cohort was consumed for release selection.
+**Checkpoint comparison.** Figures 3–4 use all eight `new-confirmation` recordings in the saved release evaluation: four per language, 79.83 minutes and 11,271 reference tokens after preprocessing. Every plotted corpus WER covers the same recordings. DER pools diarization-error seconds and scored speaker seconds, with a 250 ms collar. One of the eight scored 450h outputs is not strictly valid in its original form; the source evaluation records this separately. This cohort was consumed for release selection.
 
 **Whisper.** The benchmark runs the official [Whisper large-v3-turbo weights](https://huggingface.co/openai/whisper-large-v3-turbo) at revision `41f01f3fe87f28c78e2fbf8b568835947dd65ed9`. It uses Transformers 4.51.3, PyTorch 2.8.0, FP16, one NVIDIA RTX A5000, known language, beam size 5, temperature 0, sequential long-form decoding, and no previous-window conditioning. No reference text, hotwords, external prompt, or VAD is supplied. Silence skipping is disabled because the optional no-speech processor in this Transformers version passes an unsupported argument to Whisper's forward method. The decoder uses its 448-token total window limit. These settings were fixed before the first successful transcription.
 
