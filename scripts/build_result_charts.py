@@ -338,25 +338,6 @@ def commercial_chart(data):
     return fig
 
 
-def language_chart(data):
-    models = data["commercial_comparison"]["models"]
-    keys = marker_keys(data)
-    fig, axes = plt.subplots(1, 2, figsize=(7.2, 3.3), sharey=True, layout="constrained")
-    ymax = max(100 * models[k]["languages"][lang]["word_errors"] /
-               models[k]["languages"][lang]["reference_words"] for k in keys for lang in LANGUAGES)
-    for ax, lang, title in zip(axes, LANGUAGES, ["(a) Czech", "(b) Slovak"]):
-        for x, key in enumerate(keys):
-            row = models[key]["languages"][lang]
-            value = 100 * row["word_errors"] / row["reference_words"]
-            ax.bar(x, value, width=.58, color=COLORS[key], edgecolor="0.25", linewidth=.45, hatch=HATCHES[key])
-            ax.text(x, value + ymax * .025, f"{value:.2f}", ha="center", fontsize=9)
-        style_axes(ax)
-        ax.set(xticks=range(len(keys)), xticklabels=[{"gemini": "Gemini", "whisper": "Whisper", "vanilla": "VibeVoice", "450h": "Ours"}[k] for k in keys],
-               ylim=(0, ymax * 1.2), title=title)
-    axes[0].set_ylabel("Word error rate (%)")
-    return fig
-
-
 def progress_chart(data):
     cohort = data["checkpoint_comparison"]
     rows = {**cohort.get("baselines", {}), **cohort["models"]}
@@ -369,21 +350,6 @@ def progress_chart(data):
     style_axes(ax)
     ax.set(xticks=range(len(keys)), xticklabels=[LABELS[k].replace("Whisper large-v3-turbo", "Whisper\nlarge-v3-turbo").replace("VibeVoice-ASR", "VibeVoice\nASR") for k in keys],
            ylim=(0, max(values) * 1.2), ylabel="Corpus WER (%)")
-    return fig
-
-
-def tradeoff_chart(data):
-    rows = data["checkpoint_comparison"]["models"]
-    fig, ax = plt.subplots(figsize=(5.4, 3.5), layout="constrained")
-    xs = [100 * rows[k]["word_errors"] / rows[k]["reference_words"] for k in MODELS]
-    ys = [100 * rows[k]["diarization_error_seconds"] / rows[k]["speaker_seconds"] for k in MODELS]
-    ax.plot(xs, ys, color="0.65", lw=.8, zorder=2)
-    for x, y, key, marker, offset in zip(xs, ys, MODELS, ["o", "^", "s", "D"], [(7, -4), (7, 1), (7, -4), (7, 0)]):
-        ax.scatter(x, y, s=35, marker=marker, color=COLORS[key], edgecolor="0.25", linewidth=.45, zorder=3)
-        ax.annotate(LABELS[key], (x, y), xytext=offset, textcoords="offset points", fontsize=9, va="center")
-    style_axes(ax, "both")
-    ax.set(xlim=(5.7, 8.4), ylim=(6.2, 14.5), xlabel="Corpus WER (%)",
-           ylabel="Diarization error rate (%)")
     return fig
 
 
@@ -405,33 +371,6 @@ def export_table(data):
             writer.writerow(["new_confirmation", name, "pooled_cs_sk", "wer", row["word_errors"], row["reference_words"], 100 * row["word_errors"] / row["reference_words"], "corpus", data["commercial_comparison"]["normalization"]])
 
 
-def update_readme_tables(data):
-    path = ROOT / "README.md"
-    if not path.exists():
-        return
-    text = path.read_text()
-    model_lines = ["| Model | Czech WER (%) | Slovak WER (%) | Macro-averaged WER (%) |", "|---|---:|---:|---:|"]
-    for key in marker_keys(data):
-        row = data["commercial_comparison"]["models"][key]
-        values = [100 * row["languages"][lang]["word_errors"] / row["languages"][lang]["reference_words"] for lang in LANGUAGES]
-        model_lines.append(f"| {LABELS[key]} | {values[0]:.2f} | {values[1]:.2f} | {100 * balanced_wer(row['languages']):.2f} |")
-    checkpoint_lines = ["| Model | Corpus WER (%) | DER (%) | Scored recordings |", "|---|---:|---:|---:|"]
-    cohort = data["checkpoint_comparison"]
-    rows = {**cohort.get("baselines", {}), **cohort["models"]}
-    for key in (["whisper"] if "whisper" in rows else []) + list(MODELS):
-        row = rows[key]
-        wer = 100 * row["word_errors"] / row["reference_words"]
-        der = f"{100 * row['diarization_error_seconds'] / row['speaker_seconds']:.2f}" if "diarization_error_seconds" in row else "—"
-        checkpoint_lines.append(f"| {LABELS[key]} | {wer:.2f} | {der} | {row['scored']}/{row['expected']} |")
-    for tag, lines in [("MODEL", model_lines), ("CHECKPOINT", checkpoint_lines)]:
-        start, end = f"<!-- {tag}_TABLE_START -->", f"<!-- {tag}_TABLE_END -->"
-        if start in text and end in text:
-            before, rest = text.split(start, 1)
-            _, after = rest.split(end, 1)
-            text = before + start + "\n" + "\n".join(lines) + "\n" + end + after
-    path.write_text(text)
-
-
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--refresh-data", action="store_true", help="Verify and extract original local artifacts")
@@ -445,10 +384,8 @@ def main():
     validate(data)
     configure()
     charts = [
-        ("01-commercial-open-source", commercial_chart),
-        ("02-language-comparison", language_chart),
-        ("03-checkpoint-progress", progress_chart),
-        ("04-text-speaker-tradeoff", tradeoff_chart),
+        ("01-checkpoint-progress", progress_chart),
+        ("02-commercial-open-source", commercial_chart),
     ]
     with PdfPages(OUT / "asr-results.pdf", metadata={"Title": "ASR — Czech & Slovak results", "Author": "lofcz/asr", "CreationDate": None, "ModDate": None}) as pdf:
         for name, build in charts:
@@ -462,8 +399,7 @@ def main():
             plt.close(fig)
             print(f"Saved {name}: PNG, SVG, PDF")
     export_table(data)
-    update_readme_tables(data)
-    print(f"Exported chart values and the four-page PDF; evidence snapshot records {len(data['source_sha256'])} source hashes.")
+    print(f"Exported chart values and the two-page PDF; evidence snapshot records {len(data['source_sha256'])} source hashes.")
 
 
 if __name__ == "__main__":
