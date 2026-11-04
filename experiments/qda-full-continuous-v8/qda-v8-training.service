@@ -1,0 +1,17 @@
+[Unit]
+Description=Fresh rank64 full real and Cartesia corpus with one LR schedule
+StartLimitIntervalSec=3600
+StartLimitBurst=4
+
+[Service]
+Type=exec
+WorkingDirectory=/data/work/asr-experiments/qda-full-continuous-v8
+Environment=OMP_NUM_THREADS=2
+ExecStart=/data/work/asr-pilot/venv/bin/python -u supervise_full.py
+KillMode=control-group
+TimeoutStopSec=60
+Restart=on-failure
+RestartSec=30
+RestartPreventExitStatus=78
+StandardOutput=append:/data/work/asr-experiments/qda-full-continuous-v8/full-training.log
+StandardError=append:/data/work/asr-experiments/qda-full-continuous-v8/full-training.log

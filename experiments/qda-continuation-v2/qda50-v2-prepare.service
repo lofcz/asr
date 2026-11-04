@@ -1,0 +1,20 @@
+[Unit]
+Description=Prepare fresh QDA continuation features after baseline completion
+StartLimitIntervalSec=86400
+StartLimitBurst=2
+
+[Service]
+Type=simple
+WorkingDirectory=/data/work/asr-experiments/qda-continuation-v2
+Environment=CUDA_VISIBLE_DEVICES=0,1
+Environment=OMP_NUM_THREADS=2
+Environment=HF_HOME=/data/work/asr-pilot/hf
+Environment=PYTHONPATH=/data/work/asr-pilot/VibeVoice
+ExecStart=/data/work/asr-pilot/venv/bin/python -u launch.py prepare --wait
+Restart=on-failure
+RestartSec=300
+KillMode=control-group
+TimeoutStopSec=60
+
+[Install]
+WantedBy=default.target

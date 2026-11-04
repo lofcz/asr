@@ -1,0 +1,19 @@
+[Unit]
+Description=Full-corpus rank64 QDA training; explicit measured configuration required
+StartLimitIntervalSec=3600
+StartLimitBurst=4
+
+[Service]
+Type=exec
+WorkingDirectory=/data/work/asr-experiments/qda-full-r64-v4
+Environment=OMP_NUM_THREADS=2
+ExecStartPre=/data/work/asr-pilot/venv/bin/python -u await_ready.py
+ExecStart=/data/work/asr-pilot/venv/bin/python -u supervise_full.py
+TimeoutStartSec=infinity
+KillMode=control-group
+TimeoutStopSec=30
+Restart=on-failure
+RestartSec=30
+RestartPreventExitStatus=78
+StandardOutput=append:/data/work/asr-experiments/qda-full-r64-v4/full-training.log
+StandardError=append:/data/work/asr-experiments/qda-full-r64-v4/full-training.log

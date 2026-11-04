@@ -1,0 +1,13 @@
+[Unit]
+Description=Resumable transfer of frozen 496-hour audio corpus to mlserver
+StartLimitIntervalSec=0
+[Service]
+Type=oneshot
+ExecStart=/home/lofcz/.local/lib/asr-soniox/transfer_qda496_audio.sh
+Restart=on-failure
+RestartSec=30
+TimeoutStartSec=infinity
+UMask=0077
+Nice=10
+[Install]
+WantedBy=default.target

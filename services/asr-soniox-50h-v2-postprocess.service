@@ -1,0 +1,16 @@
+[Unit]
+Description=ASR fresh 50h v2 asr-soniox-50h-v2-postprocess
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /home/lofcz/.local/lib/asr-soniox-50h-v2/soniox_postprocess.py --root /run/media/lofcz/ssd_external/GitHub/asr --out /run/media/lofcz/ssd_external/GitHub/asr/datasets/soniox-50h-v2 --backup /home/lofcz/.local/state/asr-soniox/soniox-50h-v2
+Restart=on-failure
+RestartSec=30
+TimeoutStopSec=660
+UMask=0077
+Nice=10
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QDA · Rank64 LR calibration</title>
+<style>
+:root{color-scheme:dark;font:16px/1.55 system-ui;background:#10151d;color:#dfe8f4}body{margin:0}header{position:sticky;top:0;z-index:2;background:#18212eec;backdrop-filter:blur(16px);border-bottom:1px solid #344154;padding:18px 4vw;display:flex;align-items:center;gap:24px;flex-wrap:wrap}h1{font-size:21px;margin:0}a{color:#77ddbb}main{max-width:1400px;margin:auto;padding:28px 4vw}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:18px}.card{background:#19232f;border:1px solid #344154;border-radius:14px;padding:23px;margin-bottom:20px}h2{font-size:17px;margin:0 0 12px}.large{font-size:30px;font-weight:650}.muted{color:#9baec2;font-size:14px}.status{padding:16px 20px;border-left:3px solid #77ddbb;background:#182821;margin-bottom:24px}select{font:inherit;padding:8px;border:1px solid #435469;border-radius:8px;background:#202c3b;color:inherit}svg{width:100%;height:auto;min-height:230px}table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:11px;border-bottom:1px solid #334252}#updated{margin-left:auto;color:#9baec2;font-size:13px}pre{white-space:pre-wrap;font-size:13px}.legend{display:flex;gap:22px;font-size:13px}.legend span:before{content:'●';margin-right:7px;color:var(--color)}.warning{color:#e5b66a}
+</style>
+<header><h1>QDA · Rank64 LR calibration</h1><a href="/training">Training dashboard</a><a id="wandb" hidden target="_blank" rel="noopener">Open LR finder in W&B ↗</a><span id="updated">Loading…</span></header>
+<main><div class="status" id="status" role="status">Reading durable results…</div><p class="muted" id="healthSummary"></p>
+<section class="card" id="fullRun" hidden><h2>Full training · rank64</h2><div class="large" id="fullProgress"></div><p id="fullMetrics"></p><p class="muted" id="fullCheckpoint"></p><a id="fullWandb" hidden target="_blank" rel="noopener">Open training in W&B ↗</a></section>
+<div class="grid"><section class="card"><h2>LR range test</h2><div class="large" id="steps">—</div><div class="muted" id="finderState"></div></section><section class="card"><h2>Selected full-run LR</h2><div class="large" id="lr">—</div><div class="muted">Rank64 · alpha32 · AdamW · two A5000 GPUs</div><div class="muted" id="rangeEndpoint"></div></section><section class="card"><h2>Structurally eligible audio</h2><div class="large" id="structural">—</div><div class="muted">Eligible training pool; held-out sources remain separate</div></section><section class="card"><h2>Final training selection</h2><div class="large" id="selected">Pending</div><div class="muted" id="mix">Unique audio · no repeat padding</div></section></div>
+<section class="card"><h2>Measured loss against learning rate</h2><select id="metric" aria-label="Loss metric"><option value="validation_content_loss">Held-out content loss</option><option value="validation_loss">Held-out total loss</option><option value="validation_structure_loss">Held-out structure loss</option><option value="train_content_loss">Training content loss</option></select>
+<svg id="chart" viewBox="0 0 1000 370" role="img" aria-label="Loss versus logarithmic learning rate"></svg>
+<div class="legend"><span style="--color:#71dfb5">Measured loss</span><span style="--color:#a69bf2">Finder smoothing (content only)</span><span style="--color:#e5b66a">Selected full-run LR</span><span style="--color:#425e72">Candidate band: 1e-4 to 1e-3</span></div>
+<p class="muted">Both axes are logarithmic. The same held-out Czech/Slovak clips are scored after each update. This measures LR sensitivity and stability; sequential updates are not independent fixed-LR trials and do not establish a decay schedule or WER improvement.</p><p class="muted" id="lrDiagnostics"></p></section>
+<section class="card"><h2>Full-run learning rate schedule</h2><p class="muted" id="scheduleBudget">Awaiting schedule preview</p><svg id="scheduleChart" viewBox="0 0 1000 300" role="img" aria-label="Planned learning rate against progress through the full training run"></svg><p class="muted" id="scheduleNote"></p></section>
+<section class="card"><h2>Full-run readiness</h2><table><tbody><tr><td>Data preparation</td><td id="stage">Pending</td></tr><tr><td>Initialization</td><td id="initialization">Rank64 · both GPUs</td></tr><tr><td>Learning rate / schedule</td><td id="schedule">Awaiting measured decision</td></tr><tr><td>Training launch</td><td id="launch">Not started</td></tr><tr><td>Monitoring</td><td>Checkpoint + optimizer + scheduler + RNG; fixed interviews and both CS/SK markers</td></tr></tbody></table></section>
+<details><summary>Preparation details</summary><pre id="details"></pre></details></main>
+<script>
+const $=s=>document.querySelector(s),NS='http://www.w3.org/2000/svg';let state={};
+const add=(tag,attrs,text)=>{let e=document.createElementNS(NS,tag);for(let [k,v] of Object.entries(attrs))e.setAttribute(k,v);if(text!==undefined)e.textContent=text;$('#chart').append(e);return e};
+function draw(){const rows=state.calibration?.records||[],key=$('#metric').value,svg=$('#chart');svg.replaceChildren();if(!rows.length){add('text',{x:60,y:180,fill:'#9baec2'},'Waiting for calibration measurements');return}const ys=rows.map(r=>r[key]).filter(y=>Number.isFinite(y)&&y>0);let lo=Math.floor(Math.log10(Math.min(...ys))*.5)*2,hi=Math.ceil(Math.log10(Math.max(...ys)));lo=Math.log10(Math.min(...ys))-.08;hi=Math.log10(Math.max(...ys))+.08;if(hi-lo<.2)hi=lo+.2;let x=v=>72+(Math.log10(v)+6)/4*890,y=v=>315-(Math.log10(v)-lo)/(hi-lo)*280;
+add('rect',{x:x(1e-4),y:20,width:x(1e-3)-x(1e-4),height:295,fill:'#304d6044'});
+for(let i=0;i<=4;i++){let v=10**(-6+i);add('line',{x1:x(v),y1:20,x2:x(v),y2:315,stroke:'#334252'});add('text',{x:x(v),y:341,'text-anchor':'middle',fill:'#9baec2','font-size':13},v.toExponential(0))}
+for(let i=0;i<=4;i++){let v=10**(lo+(hi-lo)*i/4);add('line',{x1:72,y1:y(v),x2:962,y2:y(v),stroke:'#334252'});add('text',{x:60,y:y(v)+4,'text-anchor':'end',fill:'#9baec2','font-size':13},v.toPrecision(3))}
+if(state.spec?.learning_rate>0)add('line',{x1:x(state.spec.learning_rate),y1:20,x2:x(state.spec.learning_rate),y2:315,stroke:'#e5b66a','stroke-width':2,'stroke-dasharray':'6 4'});
+add('polyline',{points:rows.filter(r=>r[key]>0).map(r=>`${x(r.lr)},${y(r[key])}`).join(' '),fill:'none',stroke:'#71dfb5','stroke-width':2.5});
+for(let r of rows){let dot=add('circle',{cx:x(r.lr),cy:y(r[key]),r:3,fill:'#71dfb5'});let title=document.createElementNS(NS,'title');title.textContent=`Step ${r.step} · LR ${r.lr.toExponential(3)} · loss ${r[key].toFixed(5)}`;dot.append(title)}
+if(key==='validation_content_loss'){let h=state.calibration.upstream_history;if(h?.loss?.length)add('polyline',{points:h.loss.map((v,i)=>`${x(h.lr[i])},${y(v)}`).join(' '),fill:'none',stroke:'#a69bf2','stroke-width':2,'stroke-dasharray':'5 4'})}
+add('text',{x:520,y:367,'text-anchor':'middle',fill:'#9baec2','font-size':13},'Learning rate (log scale)')}
+function drawSchedule(){
+const preview=state.schedule_preview,svg=$('#scheduleChart');svg.replaceChildren();
+const put=(tag,attrs,text)=>{const e=document.createElementNS(NS,tag);for(const [k,v] of Object.entries(attrs))e.setAttribute(k,v);if(text!==undefined)e.textContent=text;svg.append(e);return e};
+if(!preview?.points?.length){put('text',{x:72,y:150,fill:'#9baec2'},'Waiting for saved schedule preview');return}
+const x=v=>72+v*890,y=v=>245-v/preview.peak_lr*215;
+for(const progress of [0,.1,.25,.5,.75,.9,1]){put('line',{x1:x(progress),y1:25,x2:x(progress),y2:245,stroke:'#334252'});put('text',{x:x(progress),y:267,'text-anchor':'middle',fill:'#9baec2','font-size':13},Math.round(progress*100)+'%')}
+for(const fraction of [0,1/3,2/3,1]){const rate=preview.peak_lr*fraction;put('line',{x1:72,y1:y(rate),x2:962,y2:y(rate),stroke:'#334252'});put('text',{x:60,y:y(rate)+4,'text-anchor':'end',fill:'#9baec2','font-size':13},rate===0?'0':rate.toExponential(1))}
+put('polyline',{points:preview.points.map(p=>`${x(p.progress)},${y(p.lr)}`).join(' '),fill:'none',stroke:'#e5b66a','stroke-width':3});
+for(const fraction of [0,.1,.25,.5,.75,.9,1]){const p=preview.points.reduce((a,b)=>Math.abs(a.progress-fraction)<=Math.abs(b.progress-fraction)?a:b),dot=put('circle',{cx:x(p.progress),cy:y(p.lr),r:4,fill:'#e5b66a'}),title=document.createElementNS(NS,'title');title.textContent=`${(p.progress*100).toFixed(1)}% complete · next LR ${p.lr.toExponential(3)}`+(preview.exact_plan?` · ${p.completed_steps} updates · ${p.audio_hours_seen.toFixed(2)} audio hours`:'');dot.append(title)}
+put('text',{x:520,y:296,'text-anchor':'middle',fill:'#9baec2','font-size':13},'Completed optimizer updates across the full corpus');
+$('#scheduleBudget').textContent=preview.exact_plan?`${preview.optimizer_steps} updates · ${preview.audio_hours.toFixed(2)} audio hours · ${preview.warmup_steps} warmup updates`:'Normalized preview · exact update count and audio-hour mapping follow final data preparation';
+$('#scheduleNote').textContent='10% warmup to 3e-4, then linear decay to zero. Evaluation pauses preserve the schedule. The final zero is reached after the last update.';
+}
+async function refresh(){try{
+const response=await fetch('/preparation-data',{cache:'no-store'});if(!response.ok)throw Error('Status unavailable');state=await response.json();
+const c=state.calibration,rows=c?.records||[],last=rows.at(-1),summary=state.lr_summary,spec=state.spec;
+$('#steps').textContent=rows.length+' / '+(state.calibration_config?.iterations||100);
+$('#finderState').textContent=c?(c.running?'Calibration running':c.restoration_verified&&c.calibration_discarded?'Finished · weights discarded and restoration verified':'Stopped · inspect calibration status'):'Waiting for results';
+$('#lr').textContent=spec?.learning_rate>0?spec.learning_rate.toExponential(1):'Awaiting selection';
+$('#rangeEndpoint').textContent=last?(c.running?'Latest tested LR: ':'Sweep endpoint: ')+last.lr.toExponential(2)+(summary?.stop_reason?' · '+summary.stop_reason:''):'';
+$('#lrDiagnostics').textContent=summary?'Automatic steepest-gradient suggestion: '+summary.upstream_steepest_descent_lr.toExponential(2)+'. Raw content-loss minimum at '+summary.best_raw_content_lr.toExponential(2)+'. The selected LR uses the observed low-loss region; these are different diagnostics.':'';
+$('#structural').textContent=state.selection?.total_unique_train_hours?state.selection.total_unique_train_hours.toFixed(2)+' h':state.structural?state.structural.hours_by_split.train.toFixed(2)+' h':'Pending';
+$('#initialization').textContent=state.selection?.parent_hours?'Continue from '+state.selection.parent_hours.toFixed(2)+' h checkpoint · restore Adam moments · two GPUs':'Fresh vanilla · rank64 · both GPUs';
+$('#selected').textContent=state.selection?state.selection.train_hours.toFixed(2)+' h':'Pending';
+$('#mix').textContent=state.selection?Object.entries(state.selection.length_hours||{}).map(([k,v])=>k+': '+v.toFixed(1)+' h').join(' · '):'Unique audio · no repeat padding';
+$('#stage').textContent=state.preparation?.stage?.replaceAll('-',' ')||'Pending';
+$('#status').textContent=c?.running?'Measuring rank64 LR sensitivity · full training has not started':state.preparation?.stage?.replaceAll('-',' ')||'Preparing full corpus';
+const full=state.full_training,step=full?.events?.filter(e=>e.event==='step').at(-1),validation=full?.events?.filter(e=>e.event==='validation').at(-1);
+$('#fullRun').hidden=!full?.config;
+if(full?.config){
+$('#fullProgress').textContent=`${step?.step||0} / ${full.config.steps} updates · ${(step?.audio_hours_seen||0).toFixed(2)} / ${full.config.data_hours.toFixed(2)} audio hours`;
+$('#fullMetrics').textContent=step?`Training loss ${step.loss.toFixed(4)} · content loss ${step.content_loss.toFixed(4)} · LR ${step.lr.toExponential(2)}`+(validation?` · validation content loss ${validation.content_loss.toFixed(4)}`:''):'Loading model and measuring initial validation';
+$('#fullCheckpoint').textContent=full.checkpoint?`Latest checkpoint: update ${full.checkpoint.step}`:'First checkpoint follows update 5';
+$('#status').textContent=full.completed?'Full training pass completed':state.experiment?.running?'Full training active · two GPUs':state.experiment?.stage?.replaceAll('-',' ')||'Starting full training';
+if(full.wandb?.url?.startsWith('https://')){$('#fullWandb').href=full.wandb.url;$('#fullWandb').hidden=false}
+}else if(!state.selection&&state.selection_progress){const p=state.selection_progress;$('#status').textContent=`Selecting verified windows: ${p.processed_recordings} / ${p.total_recordings} recordings · ${p.selected_hours_so_far.toFixed(2)} h retained so far`}
+$('#schedule').textContent=(spec?.learning_rate>0?'Peak LR '+spec.learning_rate.toExponential(1)+' · ':'')+(spec?.scheduler?`${spec.scheduler.name} decay · ${100*spec.scheduler.warmup_ratio}% warmup · full corpus`:'Decay schedule not selected');
+$('#launch').textContent=state.experiment?.stage||((spec?.training_started||state.experiment?.running)?'Started':'Not started');
+const failed=['stopped','needs-attention','launch-blocked-by-preparation'].includes(state.experiment?.stage),recovering=state.experiment?.stage==='automatic-recovery';
+$('#status').style.borderColor=failed?'#ef8497':recovering?'#e5b66a':'#77ddbb';$('#status').style.background=failed?'#3a2029':recovering?'#342d20':'#182821';
+if(failed||recovering){$('#status').textContent=(recovering?'Automatic recovery: ':'TRAINING STOPPED: ')+(state.experiment.reason||'Inspect the saved failure details')}
+const health=state.health,attempt=state.recovery?.latest;
+$('#healthSummary').textContent=health?.running?`Supervisor checked ${Math.max(0,Math.round(Date.now()/1000-health.checked_at))}s ago · last progress ${Math.round(health.seconds_since_progress||0)}s ago`:
+attempt?`Last failure at checkpoint ${attempt.checkpoint_step}: ${attempt.reason}. ${attempt.automatic_restart?'Bounded restart scheduled.':'Stopped for inspection; integrity checks remain enforced.'}`:'';
+$('#details').textContent=JSON.stringify({preparation:state.preparation,selection:state.selection,lr_summary:summary},null,2);
+const synced=state.live_sync?.mirrored_at||state.sync?.mirrored_at,age=synced?Math.max(0,Date.now()/1000-synced):null;
+$('#updated').textContent=age===null?'Awaiting first sync':'Metrics updated '+Math.round(age)+'s ago';
+if(state.wandb?.url?.startsWith('https://')){$('#wandb').href=state.wandb.url;$('#wandb').hidden=false}draw();drawSchedule()
+}catch(e){$('#updated').textContent=e.message}}
+$('#metric').addEventListener('change',draw);refresh();setInterval(refresh,10000);
+</script></html>

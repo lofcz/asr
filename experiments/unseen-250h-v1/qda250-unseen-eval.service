@@ -1,0 +1,14 @@
+[Unit]
+Description=Ten unseen samples: vanilla versus frozen 250-hour checkpoint
+
+[Service]
+Type=simple
+WorkingDirectory=/data/work/asr-evaluation/unseen-250h-v1
+Environment=CUDA_VISIBLE_DEVICES=0,1
+Environment=OMP_NUM_THREADS=2
+Environment=HF_HOME=/data/work/asr-pilot/hf
+Environment=PYTHONPATH=/data/work/asr-pilot/VibeVoice
+ExecStart=/data/work/asr-pilot/venv/bin/python -u run.py
+Restart=no
+KillMode=control-group
+TimeoutStopSec=60

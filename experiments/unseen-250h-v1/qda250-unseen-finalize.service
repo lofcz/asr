@@ -1,0 +1,10 @@
+[Unit]
+Description=Finish the ten-recording comparison reports without resuming training
+
+[Service]
+Type=oneshot
+WorkingDirectory=/data/work/asr-evaluation/unseen-250h-v1
+Environment=CUDA_VISIBLE_DEVICES=
+Environment=OMP_NUM_THREADS=2
+ExecStart=/data/work/asr-pilot/venv/bin/python -u /data/work/asr-evaluation/unseen-250h-v1/finalize.py
+TimeoutStartSec=7500

@@ -1,0 +1,14 @@
+[Unit]
+Description=Discarded rank64 LR range test on audited QDA data
+
+[Service]
+Type=exec
+WorkingDirectory=/data/work/asr-experiments/qda-lr-calibration-v1
+Environment=OMP_NUM_THREADS=2
+Environment=MPLBACKEND=Agg
+ExecStart=/data/work/asr-pilot/venv/bin/python -m torch.distributed.run --standalone --nproc_per_node=2 lr_find.py
+TimeoutStopSec=30
+KillMode=control-group
+Restart=no
+StandardOutput=append:/data/work/asr-experiments/qda-lr-calibration-v1/calibration.log
+StandardError=append:/data/work/asr-experiments/qda-lr-calibration-v1/calibration.log

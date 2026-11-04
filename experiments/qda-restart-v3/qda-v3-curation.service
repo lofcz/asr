@@ -1,0 +1,13 @@
+[Unit]
+Description=Audit and curate the clean QDA restart dataset (no training)
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/data/work/asr-experiments/qda-restart-v3
+ExecStart=/data/work/asr-pilot/venv/bin/python -u supplement_audit.py
+TimeoutStartSec=infinity
+Nice=5
+
+[Install]
+WantedBy=default.target

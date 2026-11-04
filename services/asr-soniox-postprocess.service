@@ -1,0 +1,17 @@
+[Unit]
+Description=Incremental ASR quality checks, review queue, and training window candidates
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /home/lofcz/.local/lib/asr-soniox/soniox_postprocess.py --root /run/media/lofcz/ssd_external/GitHub/asr --backup /home/lofcz/.local/state/asr-soniox/soniox-500h-v1
+Restart=on-failure
+RestartSec=30
+TimeoutStopSec=90
+KillMode=control-group
+UMask=0077
+Nice=10
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=default.target

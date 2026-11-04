@@ -1,0 +1,14 @@
+[Unit]
+Description=Explicitly requested AdamW and PoLoRA QDA continuation experiments
+
+[Service]
+Type=simple
+WorkingDirectory=/data/work/asr-experiments/qda-continuation-v2
+Environment=CUDA_VISIBLE_DEVICES=0,1
+Environment=OMP_NUM_THREADS=2
+Environment=HF_HOME=/data/work/asr-pilot/hf
+Environment=PYTHONPATH=/data/work/asr-pilot/VibeVoice
+ExecStart=/data/work/asr-pilot/venv/bin/python -u launch.py both
+Restart=no
+KillMode=control-group
+TimeoutStopSec=60

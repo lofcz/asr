@@ -1,0 +1,17 @@
+[Unit]
+Description=Independent full-recording Silero audit for the 500-hour ASR dataset
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+ExecStart=/home/lofcz/.local/share/asr-audit-venv/bin/python /home/lofcz/.local/lib/asr-soniox/soniox_vad_audit.py --root /run/media/lofcz/ssd_external/GitHub/asr --backup /home/lofcz/.local/state/asr-soniox/soniox-500h-v1 --workers 2
+Restart=on-failure
+RestartSec=30
+TimeoutStopSec=30
+KillMode=control-group
+UMask=0077
+Nice=10
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=default.target

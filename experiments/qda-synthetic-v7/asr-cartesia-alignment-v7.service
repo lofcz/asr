@@ -1,0 +1,17 @@
+[Unit]
+Description=Canary INT8 production forced alignment for Cartesia dataset
+After=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+WorkingDirectory=/data/work/asr-synthetic-v7
+Environment=CUDA_VISIBLE_DEVICES=0
+Environment=OMP_NUM_THREADS=2
+Environment=MKL_NUM_THREADS=2
+ExecStart=/data/work/asr-word-alignment/nemo-venv/bin/python -u /data/work/asr-synthetic-v7/implementation/align_dataset.py
+Restart=on-failure
+RestartSec=60
+TimeoutStopSec=120
+
+[Install]
+WantedBy=default.target

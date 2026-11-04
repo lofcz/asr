@@ -1,0 +1,16 @@
+[Unit]
+Description=Resumable ASR RSS collection batch
+StartLimitIntervalSec=0
+[Service]
+Type=simple
+ExecStart=/usr/bin/python /home/lofcz/.local/lib/asr-downloader/rss_batch_runner.py
+WorkingDirectory=/home/lofcz/.local/lib/asr-downloader
+Restart=on-failure
+RestartSec=30
+KillMode=control-group
+TimeoutStopSec=45
+Nice=5
+UMask=0027
+Environment=PYTHONUNBUFFERED=1
+[Install]
+WantedBy=default.target

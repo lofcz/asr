@@ -1,0 +1,12 @@
+[Unit]
+Description=Complete agreed Cartesia duration quotas using measured audio lengths
+After=network-online.target
+
+[Service]
+WorkingDirectory=/run/media/lofcz/ssd_external/GitHub/asr
+ExecStart=/usr/bin/python -u /run/media/lofcz/ssd_external/GitHub/asr/experiments/qda-synthetic-v7/finish_quotas.py
+Restart=on-failure
+RestartSec=30
+
+[Install]
+WantedBy=default.target

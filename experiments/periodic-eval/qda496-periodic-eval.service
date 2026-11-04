@@ -1,0 +1,10 @@
+[Unit]
+Description=Fixed CS/SK checkpoint WER and DER evaluation
+[Service]
+Type=oneshot
+WorkingDirectory=/data/work/asr-evaluation/periodic/code
+ExecStart=/data/work/asr-pilot/venv/bin/python /data/work/asr-evaluation/periodic/code/controller.py
+ExecStopPost=/data/work/asr-pilot/venv/bin/python /data/work/asr-evaluation/periodic/code/controller.py recover
+TimeoutStartSec=300
+TimeoutStopSec=60
+KillMode=control-group

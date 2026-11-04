@@ -1,0 +1,99 @@
+ASR audio collection worker
+===========================
+
+Append individual YouTube video IDs, watch URLs, or JSON objects to youtube.jsonl.
+Each entry MUST end with a newline. Blank lines and # comments are allowed.
+Example JSON:
+{"id":"VIDEO_ID_11","language":"cs","show":"Show name","speaker_count_hint":2}
+An example identifier above is a placeholder; use a real 11-character video ID.
+Do not append playlist or channel IDs. Discovery scripts enumerate those first.
+
+Preferred append command (locks, flushes, and syncs the queue file):
+  python scripts/audio_worker.py --config /home/lofcz/.local/state/asr-downloader/config.json enqueue VIDEO_ID
+The command also accepts multiple IDs, URLs, or quoted JSON objects.
+Plain append with a text editor or shell also works; unfinished last lines are ignored.
+Duplicate IDs do not create duplicate jobs. Editing/removing lines does NOT cancel jobs
+already ingested into the durable database. This is intentionally an append-only inbox.
+No speaker/language/duration filter silently discards explicitly queued videos.
+
+Status:
+  systemctl --user status asr-audio-worker.service
+  python scripts/audio_worker.py --config /home/lofcz/.local/state/asr-downloader/config.json status
+Live logs:
+  journalctl --user -u asr-audio-worker.service -f
+Pause/resume:
+  systemctl --user stop asr-audio-worker.service
+  systemctl --user start asr-audio-worker.service
+Retry a failed item immediately:
+  python scripts/audio_worker.py --config /home/lofcz/.local/state/asr-downloader/config.json retry VIDEO_ID
+
+Outputs: data/youtube/audio/VIDEO_ID.ext and VIDEO_ID.json (provenance + checksum).
+Partial transfers/logs: data/youtube/staging/VIDEO_ID/
+Invalid media: data/youtube/quarantine/
+Internal transactional state: /home/lofcz/.local/state/asr-downloader/
+Deployed worker: /home/lofcz/.local/lib/asr-downloader/audio_worker.py
+SSD database snapshot: queue/state-backup.sqlite3
+
+Durability:
+- Enabled systemd user service, Restart=always, 15-second restart delay, 120-second
+  watchdog, process-group cleanup. User lingering was already enabled on this machine.
+- Runs independently of terminals and this conversation, including after logout.
+- After reboot it waits for the SSD to mount at its configured path; it does NOT
+  mount the drive itself. A volume marker prevents writing to an absent/wrong drive.
+- SQLite WAL + synchronous=FULL on internal storage. Interrupted jobs are recovered
+  after acquiring an exclusive worker lock. The source inbox is rescanned, so file
+  replacement/truncation cannot invalidate a byte-offset cursor.
+- yt-dlp retains .part downloads. Completed audio is probed for an audio-only stream,
+  plausible duration, and size, hashed, fsynced, and atomically renamed. Its receipt is
+  fsynced before the database records success. A restart reconciles published files.
+- Missing or size-changed completed files are requeued during the hourly audit.
+  The stored SHA-256 permits later integrity checks; the hourly audit is not a full
+  checksum/decode scan of every audio file.
+- Failures remain in the database and retry indefinitely with exponential backoff
+  (roughly 1 minute initially, up to 6 hours plus jitter). Permanent unavailable,
+  private, or authentication-gated videos remain visible as retrying errors.
+- SQLite online backups run between jobs, at most once every 15 minutes, retaining
+  latest + seven daily snapshots internally and a latest snapshot on the SSD.
+- Default three concurrent downloads, 3 MiB/s per-download rate limit, 1 fragment at a time, and 10 GiB free
+  space reserve. Individual download subprocesses have a one-hour timeout.
+- No Spotify credentials or browser cookies are configured. No transcription runs.
+
+Configuration: /home/lofcz/.local/state/asr-downloader/config.json
+Restart the service after changing configuration. To deploy source changes, run
+  python scripts/install_audio_worker.py
+The installer preserves existing configuration values.
+Update downloader dependencies deliberately, then restart the worker:
+  .venv/bin/pip install --upgrade yt-dlp ytmusicapi
+The worker uses yt-dlp's official ejs:github component for YouTube JS challenges.
+
+Tests:
+  python -m unittest discover -s tests -v
+A real SIGKILL/restart test is recorded in experiments/youtube/restart-test.json.
+This cannot guarantee recovery from simultaneous failure/loss of both disks.
+
+RSS collection is supervised independently by asr-rss-batch.service (enabled).
+It waits for the SSD, downloads with four threads (one transfer per host), and
+reuses validated completed receipts on restart. Failed batches retry after five
+minutes; individual incomplete RSS files restart from scratch.
+  systemctl --user status asr-rss-batch.service
+  journalctl --user -u asr-rss-batch.service -f
+  systemctl --user stop asr-rss-batch.service
+  systemctl --user start asr-rss-batch.service
+Input: data/manifests/selected-audio.jsonl. Outputs: data/audio/<language>/<show>/.
+
+Combined completed-audio status updates every minute via asr-corpus-status.timer:
+  python scripts/corpus_status.py
+  cat data/manifests/corpus-status.json
+The report counts present files with matching receipt sizes and excludes exact
+SHA256 matches and likely episode-title duplicates. downloaded-corpus.json lists
+the included files with provenance. Title matching is heuristic; cross-platform
+audio fingerprinting, spoken language, and speaker counts still require QA.
+The current target is 1,000 completed hours. asr-collection-guard.timer checks
+every 15 seconds and stops/disables both collectors at the duration target or
+95 GB of total project files (including partial downloads), whichever comes first.
+The 5 GB margin below the requested 100 GB budget allows for in-flight transfers.
+This is a monitored cutoff, not a filesystem quota. Configuration keys: target_hours,
+budget_bytes, budget_stop_bytes. Status: data/manifests/collection-guard.json.
+To resume after a limit, raise the relevant config limit first, then run:
+  systemctl --user enable --now asr-audio-worker.service asr-rss-batch.service RSS and YouTube queues overlap; their estimated
+hours must not simply be added and called downloaded or unique audio.

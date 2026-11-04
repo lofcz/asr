@@ -1,0 +1,17 @@
+[Unit]
+Description=Durable Soniox transcription of frozen 500-hour ASR dataset
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /home/lofcz/.local/lib/asr-soniox/soniox_durable.py --root /run/media/lofcz/ssd_external/GitHub/asr --out /run/media/lofcz/ssd_external/GitHub/asr/datasets/soniox-500h-v1 --backup /home/lofcz/.local/state/asr-soniox/soniox-500h-v1 --env /run/media/lofcz/ssd_external/GitHub/tazatelka/.env --marker 33ba0a9e-6e77-441d-96fc-82f4270b7140 --workers 32 --max-outstanding 80 --upload-batch 8
+Restart=on-failure
+RestartSec=30
+TimeoutStopSec=660
+KillMode=control-group
+UMask=0077
+Nice=5
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=default.target

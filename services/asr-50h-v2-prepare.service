@@ -1,0 +1,16 @@
+[Unit]
+Description=Finalize and verify fresh ASR 50h release, copy to mlserver, build CPU experiment plan
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+WorkingDirectory=/run/media/lofcz/ssd_external/GitHub/asr
+ExecStart=/usr/bin/python3 /run/media/lofcz/ssd_external/GitHub/asr/experiments/qda-continuation-v2/prepare_data_service.py
+Restart=on-failure
+RestartSec=45
+Nice=10
+UMask=0077
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=default.target

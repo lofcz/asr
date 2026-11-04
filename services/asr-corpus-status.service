@@ -1,0 +1,6 @@
+[Unit]
+Description=Refresh ASR downloaded corpus totals
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python /home/lofcz/.local/lib/asr-downloader/corpus_status.py

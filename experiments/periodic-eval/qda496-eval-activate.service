@@ -1,0 +1,5 @@
+[Unit]
+Description=Activate evaluation trainer hook at next saved checkpoint
+[Service]
+Type=simple
+ExecStart=/data/work/asr-pilot/venv/bin/python /data/work/asr-evaluation/periodic/code/activate.py

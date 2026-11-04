@@ -1,0 +1,10 @@
+[Unit]
+Description=Recheck dataset admission after explicit human reviews
+
+[Path]
+PathChanged=/data/work/asr-datasets/qda-clean-v3/reviews
+PathChanged=/data/work/asr-datasets/qda-clean-v3/acoustic-reviews
+Unit=qda-v3-curation.service
+
+[Install]
+WantedBy=default.target

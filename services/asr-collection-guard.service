@@ -1,0 +1,7 @@
+[Unit]
+Description=Enforce ASR collection duration and storage limits
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python /home/lofcz/.local/lib/asr-downloader/collection_guard.py
+TimeoutStartSec=210

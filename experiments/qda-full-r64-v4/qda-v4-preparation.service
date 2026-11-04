@@ -1,0 +1,13 @@
+[Unit]
+Description=Prepare full clean rank64 QDA corpus; never starts training
+
+[Service]
+Type=exec
+WorkingDirectory=/data/work/asr-experiments/qda-full-r64-v4
+Environment=OMP_NUM_THREADS=2
+ExecStart=/data/work/asr-pilot/venv/bin/python -u curate.py
+TimeoutStopSec=30
+KillMode=control-group
+Restart=no
+StandardOutput=append:/data/work/asr-experiments/qda-full-r64-v4/preparation.log
+StandardError=append:/data/work/asr-experiments/qda-full-r64-v4/preparation.log

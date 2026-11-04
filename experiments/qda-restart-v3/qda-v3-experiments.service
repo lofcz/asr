@@ -1,0 +1,16 @@
+[Unit]
+Description=Fresh Soniox-labelled QDA rank16/rank64 experiments on two A5000 GPUs
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/data/work/asr-experiments/qda-restart-v3
+ExecStart=/data/work/asr-pilot/venv/bin/python -u run_experiments.py
+TimeoutStartSec=infinity
+TimeoutStopSec=45
+Environment=PYTHONUNBUFFERED=1
+Environment=TOKENIZERS_PARALLELISM=false
+Environment=OMP_NUM_THREADS=2
+
+[Install]
+WantedBy=default.target

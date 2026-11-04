@@ -1,0 +1,11 @@
+[Unit]
+Description=Export Cartesia audio and known-speaker native timestamps for VibeVoice
+
+[Service]
+WorkingDirectory=/run/media/lofcz/ssd_external/GitHub/asr
+ExecStart=/usr/bin/python -u /run/media/lofcz/ssd_external/GitHub/asr/experiments/qda-synthetic-v7/export_training.py
+Restart=on-failure
+RestartSec=30
+
+[Install]
+WantedBy=default.target

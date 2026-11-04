@@ -1,0 +1,15 @@
+[Unit]
+Description=Expand Cartesia bank toward 1000 acoustically screened voices
+After=network-online.target
+ConditionPathExists=!/run/media/lofcz/ssd_external/GitHub/asr/datasets/cartesia-qda-v7/voices/bank-ready.json
+
+[Service]
+WorkingDirectory=/run/media/lofcz/ssd_external/GitHub/asr
+Environment=OPENBLAS_NUM_THREADS=1
+ExecStart=/home/lofcz/.local/share/asr-synthetic/venv/bin/python -u /run/media/lofcz/ssd_external/GitHub/asr/experiments/qda-synthetic-v7/build_voice_bank.py
+ExecStopPost=/usr/bin/python /run/media/lofcz/ssd_external/GitHub/asr/experiments/qda-synthetic-v7/finish_voice_bank.py
+Restart=on-failure
+RestartSec=60
+
+[Install]
+WantedBy=default.target

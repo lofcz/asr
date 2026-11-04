@@ -1,0 +1,22 @@
+import json,pathlib
+BASE=pathlib.Path(__file__).resolve().parent
+results=[]
+for path in sorted((BASE/'runs').glob('*/result-rank0.json')):
+    r=json.loads(path.read_text())
+    if r['status']!='completed':continue
+    ranks=[json.loads(p.read_text()) for p in path.parent.glob('result-rank*.json')]
+    results.append({'name':path.parent.name,'gpus':r['world_size'],'mode':r['config']['mode'],'raw_audio':r['config']['raw_audio'],'target_clip_seconds':r['config']['bucket'],'optimizer_steps':r['config']['steps'],'microbatches_total':r['config']['steps']*r['config']['accum']*r['world_size'],'audio_hours_per_wall_hour':r['audio_realtime_factor'],'hours_per_500h_epoch':r['hours_per_500h_epoch'],'peak_allocated_gib_per_gpu':max(x['peak_gpu_gib'] for x in ranks),'peak_reserved_gib_per_gpu':max(x['peak_reserved_gib'] for x in ranks),'validation_loss_before':r['validation_loss_before'],'validation_loss_after':r['validation_loss_after'],'cache_manifest_sha256':r.get('cache_manifest_sha256')})
+report={'hardware':{'gpus':'2 x NVIDIA RTX A5000 24 GiB','cpu':'4 vCPUs, AMD EPYC 9124 / KVM','ram_gib':62,'interconnect':'PCIe host bridge (no NVLink reported)'},'sample':json.loads((BASE/'dataset/summary.json').read_text()),'cache':json.loads((BASE/'cache/metadata.json').read_text()),'experiments':results,'generation_smoke_tests':{}}
+for p in (BASE/'runs').glob('generation-*.json'):
+    d=json.loads(p.read_text());s=d['samples'];report['generation_smoke_tests'][p.stem]={'valid_json':sum(x['valid_json'] for x in s),'samples':len(s),'pseudo_reference_wer':sum(x['word_errors'] for x in s)/sum(x['reference_words'] for x in s) if all(x['valid_json'] for x in s) else None,'details':str(p.relative_to(BASE))}
+(BASE/'results.json').write_text(json.dumps(report,indent=2,ensure_ascii=False))
+lines=['# VibeVoice ASR pilot measurements','', 'Measured on mlserver, 2026-10-22. All rows below use the corrected word-boundary dataset.','', '| Run | GPUs | Peak allocated GiB/GPU | Audio throughput | 500 h epoch | Held-out loss before → after |','|---|---:|---:|---:|---:|---:|']
+for r in results:lines.append(f"| {r['name']} | {r['gpus']} | {r['peak_allocated_gib_per_gpu']:.2f} | {r['audio_hours_per_wall_hour']:.1f}× | {r['hours_per_500h_epoch']:.2f} h | {r['validation_loss_before']:.3f} → {r['validation_loss_after']:.3f} |")
+lines+=['','Throughput excludes model load, first optimizer step, feature preparation, validation, and adapter saving. DDP figures sum audio across GPUs and use the slowest rank’s step time. VRAM figures are PyTorch allocations; reserved/driver memory is higher (see results.json).','', 'Single-GPU runs: 8 optimizer steps, accumulation 4 (raw-audio run: 4 steps). DDP run: 50 optimizer steps, accumulation 2 per GPU = 200 microbatches total. DDP uses learning rate 2e-5; other runs use 1e-4. These runs compare engineering feasibility and throughput, not optimal hyperparameters.','', 'Validation is four clips spanning Czech and Slovak from two held-out shows. Soniox is the teacher, not human ground truth. Lower loss is not a measured WER or DER improvement. Target-120s variants include shorter remainder clips.','', 'All training paths use SDPA, gradient checkpointing, rank-16 LoRA on attention/MLP layers, frozen speech encoders/connectors, and chunked FP32 cross-entropy. The raw-audio comparison retains the optimized loss; it is not a timing of the unmodified upstream Trainer.','', 'The archive/token-boundary-v1 directory preserves the preliminary dataset and experiments, including a failed QLoRA dtype smoke test. They are excluded from the table.']
+if report['generation_smoke_tests']:
+ lines+=['','## Generation smoke test','', 'Two held-out clips per probe, one per language (30 or 60 seconds as recorded in JSON). WER uses normalized words against machine labels and is not a quality benchmark.']
+ for name,v in report['generation_smoke_tests'].items():
+  wer=f"{v['pseudo_reference_wer']:.1%}" if v['pseudo_reference_wer'] is not None else 'not aggregated: invalid JSON output'
+  lines.append(f"- {name}: valid JSON {v['valid_json']}/{v['samples']}; pseudo-reference WER {wer}.")
+ lines+=['', 'The 50-step tiny-dataset adapter repeats a word until the token limit on the Slovak 30-second probe. Do not deploy this adapter. Teacher-forced validation loss alone did not catch this generation regression. Speaker-count checks on two clips are not DER measurements.']
+(BASE/'RESULTS.md').write_text('\n'.join(lines)+'\n');print(json.dumps(results,indent=2))
