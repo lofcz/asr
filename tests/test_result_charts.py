@@ -52,6 +52,35 @@ class ChartEvidenceTests(unittest.TestCase):
         self.assertEqual(row["scored"], 8)
         self.assertEqual(row["strict_output_valid"], 7)
 
+    def whisper_expected(self):
+        return {row["id"]: {
+            **{key: row[key] for key in ["cohort", "language", "audio_sha256", "reference_sha256", "source_start", "duration_seconds"]},
+            "reference_words": row["metrics"]["number_normalized_reference_words"],
+        } for row in self.data["whisper_benchmark"]["rows"]}
+
+    def test_whisper_run_must_use_the_same_source_audio(self):
+        expected = self.whisper_expected()
+        run = copy.deepcopy(self.data["whisper_benchmark"])
+        run["rows"][0]["audio_sha256"] = "different-source-audio"
+        with self.assertRaises(AssertionError):
+            charts.attach_whisper(self.data, run, expected)
+
+    def test_whisper_run_cannot_duplicate_one_clip_and_omit_another(self):
+        expected = self.whisper_expected()
+        run = copy.deepcopy(self.data["whisper_benchmark"])
+        run["rows"][-1] = copy.deepcopy(run["rows"][-2])
+        with self.assertRaises(AssertionError):
+            charts.attach_whisper(self.data, run, expected)
+
+    def test_text_only_baseline_has_no_invented_diarization(self):
+        charts.attach_whisper(self.data, self.data["whisper_benchmark"], self.whisper_expected())
+        baseline = self.data["checkpoint_comparison"]["baselines"]["whisper"]
+        self.assertNotIn("diarization_error_seconds", baseline)
+        baseline["diarization_error_seconds"] = 0
+        with self.assertRaises(AssertionError):
+            charts.validate(self.data)
+
+
 
 if __name__ == "__main__":
     unittest.main()

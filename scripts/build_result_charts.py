@@ -24,9 +24,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
-from matplotlib.lines import Line2D
-from matplotlib.patches import FancyBboxPatch
-from matplotlib.ticker import MultipleLocator, PercentFormatter
+from matplotlib.ticker import MaxNLocator
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 OUT = ROOT / "charts"
@@ -34,16 +32,16 @@ SNAPSHOT = OUT / "results.json"
 LANGUAGES = ("cs", "sk")
 MODELS = ("vanilla", "300h", "450h", "final")
 COLORS = {
-    "background": "#FAF8F4",
-    "ink": "#172B36",
-    "muted": "#627078",
-    "grid": "#E1E3E0",
-    "base": "#9BA8B0",
-    "commercial": "#7862CB",
-    "ours": "#007F70",
-    "300h": "#7CB7AC",
-    "final": "#31546D",
+    "vanilla": "#999999", "gemini": "#AA4499", "whisper": "#D55E00",
+    "450h": "#0072B2", "300h": "#56B4E9", "final": "#009E73",
 }
+LABELS = {
+    "vanilla": "VibeVoice-ASR", "gemini": "Gemini 4 Argon",
+    "whisper": "Whisper large-v3-turbo", "450h": "Ours (450h)",
+    "300h": "Ours (300h)", "final": "Ours (final)",
+}
+HATCHES = {"vanilla": "", "gemini": "..", "whisper": "//", "450h": "", "300h": "\\", "final": "xx"}
+
 
 
 def balanced_wer(languages):
@@ -75,6 +73,46 @@ def validate(data):
         assert 0 <= row["strict_output_valid"] <= row["scored"]
         assert row["reference_words"] > 0 and row["speaker_seconds"] > 0
         assert row["word_errors"] >= 0 and row["diarization_error_seconds"] >= 0
+    for row in cohort.get("baselines", {}).values():
+        assert row["scored"] == row["expected"] == cohort["recordings"]
+        assert row["reference_words"] == cohort["reference_words"]
+        assert row["word_errors"] >= 0
+        assert "diarization_error_seconds" not in row, "Do not invent diarization for a text-only baseline"
+
+
+def attach_whisper(data, run, expected):
+    """Admit only the complete run on the exact audio/reference pairs."""
+    assert run["complete"] and run["scored"] == run["expected"] == len(expected)
+    rows = run["rows"]
+    assert len(rows) == len(expected) and {r["id"] for r in rows} == set(expected)
+    assert run["settings"]["model"] == "openai/whisper-large-v3-turbo"
+    markers = {}
+    cohort = {"word_errors": 0, "reference_words": 0, "scored": 0, "expected": data["checkpoint_comparison"]["recordings"]}
+    for row in rows:
+        source = expected[row["id"]]
+        assert row["complete"]
+        for key in ["cohort", "language", "audio_sha256", "reference_sha256", "source_start"]:
+            assert row[key] == source[key], (row["id"], key)
+        assert abs(row["duration_seconds"] - source["duration_seconds"]) < .001
+        m = row["metrics"]
+        assert m["number_normalized_reference_words"] == source["reference_words"]
+        assert math.isclose(m["number_normalized_wer"], m["number_normalized_errors"] / m["number_normalized_reference_words"])
+        counts = {"word_errors": m["number_normalized_errors"], "reference_words": m["number_normalized_reference_words"]}
+        if row["cohort"] == "dialogue_markers":
+            assert row["language"] not in markers
+            markers[row["language"]] = counts
+        else:
+            assert row["cohort"] == "new-confirmation"
+            cohort["word_errors"] += counts["word_errors"]
+            cohort["reference_words"] += counts["reference_words"]
+            cohort["scored"] += 1
+    assert set(markers) == set(LANGUAGES)
+    data["commercial_comparison"]["models"]["whisper"] = {
+        "label": LABELS["whisper"], "type": "Open-source baseline", "languages": markers,
+    }
+    data["checkpoint_comparison"]["baselines"] = {"whisper": cohort}
+    data["whisper_benchmark"] = run
+    validate(data)
 
 
 def extract():
@@ -178,7 +216,7 @@ def extract():
         assert math.isclose(row["number_normalized_wer"], row["number_normalized_errors"] / row["reference_words"])
         assert math.isclose(row["der_250ms"], row["diarization_error_seconds"] / row["speaker_seconds"])
     data = {
-        "schema_version": 1,
+        "schema_version": 2,
         "source_report_updated_at": report["updated_at"],
         "recommended_checkpoint": candidate["checkpoint"],
         "model_revision": candidate["model_revision"],
@@ -205,154 +243,138 @@ def extract():
         ],
         "source_sha256": dict(sorted(hashes.items())),
     }
+    whisper_folder = pathlib.Path("experiments/whisper-large-v3-turbo")
+    if (ROOT / whisper_folder / "result.json").exists():
+        run = source(whisper_folder / "result.json")
+        assert run["settings"]["selection_sha256"] == hashes[str(base / "selection.json")]
+        assert run["settings"]["normalizer_sha256"] == hashes[str(normalizer_path.relative_to(ROOT))]
+        assert run["settings"]["runner_sha256"] == hashlib.sha256((ROOT / "scripts/benchmark_whisper.py").read_bytes()).hexdigest()
+        expected = {}
+        reference_texts = {}
+        for lang in LANGUAGES:
+            folder = pathlib.Path("experiments/production-reference-audit-v2") / lang
+            approval = source(folder / "gold-approval.json")
+            audit = source(folder / "audit.json")
+            key = "marker-" + lang
+            expected[key] = {
+                "cohort": "dialogue_markers", "language": lang, "audio_sha256": approval["audio_sha256"],
+                "reference_sha256": approval["reference_sha256"], "source_start": 0,
+                "duration_seconds": audit["duration_seconds"],
+                "reference_words": comparison["models"]["vanilla"]["languages"][lang]["reference_words"],
+            }
+            reference_texts[key] = "".join(s["Content"] for s in source(folder / "gold.reference.json"))
+        events = {"[Unintelligible Speech]", "[Music]", "[Human Sounds]", "[Environmental Sounds]", "[Noise]", "[Silence]"}
+        for row in rows:
+            reference_text = " ".join(s["Content"] for s in row["target"] if s["Content"].strip() not in events)
+            expected[row["window_id"]] = {
+                "cohort": "new-confirmation", "language": row["language"], "audio_sha256": row["audio_sha256"],
+                "reference_sha256": hashlib.sha256((json.dumps(row["target"], ensure_ascii=False, indent=2) + "\n").encode()).hexdigest(),
+                "source_start": row["source_start"], "duration_seconds": row["duration"],
+                "reference_words": len(normalizer.tokens(reference_text, row["language"])),
+            }
+            reference_texts[row["window_id"]] = reference_text
+        for result in run["rows"]:
+            raw = source(whisper_folder / (result["id"] + ".json"))
+            assert {k: v for k, v in raw.items() if k != "hypothesis"} == result
+            assert normalizer.score(reference_texts[result["id"]], raw["hypothesis"], result["language"]) == result["metrics"]
+        attach_whisper(data, run, expected)
+        data["methodology"].append("Whisper large-v3-turbo uses pinned official weights, FP16, beam size 5, known language, no prompt, no VAD or silence skipping; no speaker labels or DER are assigned.")
+        data["source_sha256"] = dict(sorted(hashes.items()))
     validate(data)
     return data
 
 
 def configure():
     plt.rcParams.update({
-        "font.family": "DejaVu Sans",
-        "font.size": 12,
-        "text.color": COLORS["ink"],
-        "axes.labelcolor": COLORS["muted"],
-        "xtick.color": COLORS["muted"],
-        "ytick.color": COLORS["muted"],
-        "axes.facecolor": COLORS["background"],
-        "figure.facecolor": COLORS["background"],
-        "savefig.facecolor": COLORS["background"],
-        "svg.fonttype": "path",
-        "svg.hashsalt": "asr-results-v1",
-        "pdf.fonttype": 42,
-        "axes.spines.top": False,
-        "axes.spines.right": False,
-        "axes.spines.left": False,
-        "axes.spines.bottom": False,
+        "font.family": "DejaVu Serif", "font.size": 10,
+        "axes.labelsize": 10, "xtick.labelsize": 9, "ytick.labelsize": 9,
+        "legend.fontsize": 9, "axes.titlesize": 11,
+        "figure.facecolor": "white", "axes.facecolor": "white",
+        "savefig.facecolor": "white", "text.color": "black",
+        "axes.labelcolor": "black", "xtick.color": "black", "ytick.color": "black",
+        "axes.spines.top": False, "axes.spines.right": False,
+        "axes.spines.left": True, "axes.spines.bottom": True,
+        "axes.linewidth": .65, "grid.linewidth": .5,
+        "svg.fonttype": "path", "svg.hashsalt": "asr-paper-results-v2", "pdf.fonttype": 42,
+        "hatch.linewidth": .4,
     })
 
 
-def page(number, title, subtitle):
-    fig = plt.figure(figsize=(16, 9))
-    fig.text(.055, .942, "A S R   /   R E S E A R C H", fontsize=10, weight="bold", color=COLORS["ours"])
-    fig.text(.945, .942, f"{number:02d}  /  04", ha="right", fontsize=10, color=COLORS["muted"])
-    fig.text(.055, .85, title, fontsize=32, weight="bold", fontfamily="DejaVu Serif")
-    fig.text(.055, .798, subtitle, fontsize=13, color=COLORS["muted"])
-    fig.add_artist(Line2D([.055, .945], [.765, .765], transform=fig.transFigure, lw=1, color=COLORS["grid"]))
-    fig.text(.055, .043, "C Z E C H   +   S L O V A K", fontsize=9, color=COLORS["muted"])
-    fig.text(.945, .043, "lofcz / asr", ha="right", fontsize=10, color=COLORS["muted"])
-    return fig
-
-
-def style_axes(ax, axis="x"):
+def style_axes(ax, axis="y"):
     ax.set_axisbelow(True)
-    ax.grid(axis=axis, color=COLORS["grid"], linewidth=.8)
-    ax.tick_params(axis="both", length=0, pad=10)
+    ax.grid(axis=axis, color="0.88")
+    ax.tick_params(direction="out", length=3, width=.6)
+    ax.xaxis.set_major_locator(MaxNLocator(nbins=6, min_n_ticks=3, steps=[1, 2, 2.5, 5, 10]))
+    if axis != "x":
+        ax.yaxis.set_major_locator(MaxNLocator(nbins=5, min_n_ticks=3, steps=[1, 2, 2.5, 5, 10]))
 
 
-def card(fig, x, y, width, height):
-    fig.add_artist(FancyBboxPatch(
-        (x, y), width, height, transform=fig.transFigure,
-        boxstyle="round,pad=0.013,rounding_size=0.018", facecolor="#EDF3EF", edgecolor="none", zorder=0,
-    ))
+def marker_keys(data):
+    return [key for key in ["gemini", "whisper", "vanilla", "450h"]
+            if key in data["commercial_comparison"]["models"]]
 
 
 def commercial_chart(data):
     models = data["commercial_comparison"]["models"]
-    fig = page(1, "Commercial & open-source ASR", "Number-normalized word disagreement with Soniox (%)  ·  Lower is better")
-    ax = fig.add_axes([.265, .24, .39, .43])
-    keys = ["vanilla", "450h", "gemini"]
-    palette = [COLORS["base"], COLORS["ours"], COLORS["commercial"]]
+    keys = marker_keys(data)
     values = [100 * balanced_wer(models[k]["languages"]) for k in keys]
-    ax.barh([2, 1, 0], values, height=.38, color=palette, zorder=3)
-    ax.set(xlim=(0, 2.55), ylim=(-.6, 2.6), yticks=[])
-    ax.xaxis.set_major_locator(MultipleLocator(.5))
-    ax.xaxis.set_major_formatter(PercentFormatter(100, decimals=1))
-    style_axes(ax)
-    for y, key, value, color in zip([2, 1, 0], keys, values, palette):
-        pos = fig.transFigure.inverted().transform(ax.transData.transform((0, y)))
-        fig.text(.055, pos[1] + .010, models[key]["label"], fontsize=16, weight="bold", color=color if key != "vanilla" else COLORS["ink"])
-        fig.text(.055, pos[1] - .022, models[key]["type"], fontsize=10, color=COLORS["muted"])
-        ax.text(value + .07, y, f"{value:.2f}%", va="center", fontsize=17, weight="bold", color=color)
-    card(fig, .725, .27, .21, .37)
-    reduction = 1 - values[1] / values[0]
-    fig.text(.747, .567, "OURS VS. BASE", fontsize=10, weight="bold", color=COLORS["ours"])
-    fig.text(.747, .455, f"{reduction:.0%}", fontsize=58, weight="bold", color=COLORS["ours"])
-    fig.text(.747, .365, "fewer word\ndifferences", fontsize=19, linespacing=1.35)
-    fig.text(.265, .14, "Soniox  /  commercial reference", fontsize=11, color=COLORS["muted"])
+    fig, ax = plt.subplots(figsize=(7.2, 2.8), layout="constrained")
+    for y, key, value in zip(range(len(keys)), keys, values):
+        ax.barh(y, value, height=.52, color=COLORS[key], edgecolor="0.25", linewidth=.45, hatch=HATCHES[key])
+        ax.text(value + max(values) * .025, y, f"{value:.2f}", va="center", fontsize=10)
+    ax.set(yticks=range(len(keys)), yticklabels=[LABELS[k] for k in keys],
+           xlabel="Normalized WER vs. Soniox (%)", xlim=(0, max(values) * 1.18))
+    ax.invert_yaxis()
+    style_axes(ax, "x")
     return fig
 
 
 def language_chart(data):
     models = data["commercial_comparison"]["models"]
-    fig = page(2, "The language-by-language view", "Number-normalized word disagreement with Soniox (%)  ·  Lower is better")
-    keys = ["vanilla", "450h", "gemini"]
-    palette = [COLORS["base"], COLORS["ours"], COLORS["commercial"]]
-    handles = [Line2D([], [], marker="s", linestyle="", color=c, markersize=9) for c in palette]
-    fig.legend(handles, ["VibeVoice-ASR", "ASR · ours", "Gemini 4 Argon"], loc="upper left", bbox_to_anchor=(.05, .735), frameon=False, ncol=3, columnspacing=2.7)
-    for left, lang, title in [(.105, "cs", "Czech"), (.57, "sk", "Slovak")]:
-        ax = fig.add_axes([left, .245, .34, .36])
-        values = [100 * models[k]["languages"][lang]["word_errors"] / models[k]["languages"][lang]["reference_words"] for k in keys]
-        ax.bar(range(3), values, width=.44, color=palette, zorder=3)
-        ax.set(ylim=(0, 2.8), xlim=(-.6, 2.6), xticks=[])
-        ax.yaxis.set_major_locator(MultipleLocator(.5))
-        ax.yaxis.set_major_formatter(PercentFormatter(100, decimals=1))
-        style_axes(ax, "y")
-        for x, value, color in zip(range(3), values, palette):
-            ax.text(x, value + .12, f"{value:.2f}%", ha="center", fontsize=17, weight="bold", color=color)
-            if value == 0:
-                ax.plot(x, 0, marker="o", ms=7, color=color, clip_on=False, zorder=4)
-        fig.text(left + .17, .158, title, fontsize=21, weight="bold", ha="center", fontfamily="DejaVu Serif")
+    keys = marker_keys(data)
+    fig, axes = plt.subplots(1, 2, figsize=(7.2, 3.3), sharey=True, layout="constrained")
+    ymax = max(100 * models[k]["languages"][lang]["word_errors"] /
+               models[k]["languages"][lang]["reference_words"] for k in keys for lang in LANGUAGES)
+    for ax, lang, title in zip(axes, LANGUAGES, ["(a) Czech", "(b) Slovak"]):
+        for x, key in enumerate(keys):
+            row = models[key]["languages"][lang]
+            value = 100 * row["word_errors"] / row["reference_words"]
+            ax.bar(x, value, width=.58, color=COLORS[key], edgecolor="0.25", linewidth=.45, hatch=HATCHES[key])
+            ax.text(x, value + ymax * .025, f"{value:.2f}", ha="center", fontsize=9)
+        style_axes(ax)
+        ax.set(xticks=range(len(keys)), xticklabels=[{"gemini": "Gemini", "whisper": "Whisper", "vanilla": "VibeVoice", "450h": "Ours"}[k] for k in keys],
+               ylim=(0, ymax * 1.2), title=title)
+    axes[0].set_ylabel("Normalized WER vs. Soniox (%)")
     return fig
 
 
 def progress_chart(data):
-    rows = data["checkpoint_comparison"]["models"]
-    values = [100 * rows[m]["word_errors"] / rows[m]["reference_words"] for m in MODELS]
-    fig = page(3, "Fine-tuning, measured", "Number-normalized word error rate (%)  ·  Lower is better")
-    ax = fig.add_axes([.105, .235, .56, .43])
-    palette = [COLORS["base"], COLORS["300h"], COLORS["ours"], COLORS["final"]]
-    ax.bar(range(4), values, width=.43, color=palette, zorder=3)
-    ax.set(ylim=(0, 9), xlim=(-.6, 3.6), xticks=range(4), xticklabels=["VibeVoice-ASR", "Ours · 300h", "Ours · 450h", "Ours · final"])
-    ax.yaxis.set_major_locator(MultipleLocator(2))
-    ax.yaxis.set_major_formatter(PercentFormatter(100, decimals=0))
-    style_axes(ax, "y")
-    for x, value, color in zip(range(4), values, palette):
-        ax.text(x, value + .3, f"{value:.2f}%", ha="center", fontsize=20, weight="bold", color=color)
-    card(fig, .735, .28, .20, .35)
-    reduction = 1 - values[2] / values[0]
-    fig.text(.755, .562, "450h VS. BASE", fontsize=10, weight="bold", color=COLORS["ours"])
-    fig.text(.755, .455, f"{100 * reduction:.1f}%", fontsize=42, weight="bold", color=COLORS["ours"])
-    fig.text(.755, .362, "fewer word errors", fontsize=15)
-    fig.text(.105, .13, "Reference transcripts: Soniox", fontsize=11, color=COLORS["muted"])
+    cohort = data["checkpoint_comparison"]
+    rows = {**cohort.get("baselines", {}), **cohort["models"]}
+    keys = (["whisper"] if "whisper" in rows else []) + list(MODELS)
+    values = [100 * rows[k]["word_errors"] / rows[k]["reference_words"] for k in keys]
+    fig, ax = plt.subplots(figsize=(7.2, 3.2), layout="constrained")
+    for x, key, value in zip(range(len(keys)), keys, values):
+        ax.bar(x, value, width=.6, color=COLORS[key], edgecolor="0.25", linewidth=.45, hatch=HATCHES[key])
+        ax.text(x, value + max(values) * .025, f"{value:.2f}", ha="center", fontsize=10)
+    style_axes(ax)
+    ax.set(xticks=range(len(keys)), xticklabels=[LABELS[k].replace("Whisper large-v3-turbo", "Whisper\nlarge-v3-turbo").replace("VibeVoice-ASR", "VibeVoice\nASR") for k in keys],
+           ylim=(0, max(values) * 1.2), ylabel="Normalized WER vs. Soniox (%)")
     return fig
 
 
 def tradeoff_chart(data):
     rows = data["checkpoint_comparison"]["models"]
-    fig = page(4, "Text and speaker accuracy", "Word error rate vs. diarization error rate  ·  Lower-left is better")
-    ax = fig.add_axes([.115, .21, .53, .48])
-    style_axes(ax, "both")
-    palette = [COLORS["base"], COLORS["300h"], COLORS["ours"], COLORS["final"]]
+    fig, ax = plt.subplots(figsize=(5.4, 3.5), layout="constrained")
     xs = [100 * rows[k]["word_errors"] / rows[k]["reference_words"] for k in MODELS]
     ys = [100 * rows[k]["diarization_error_seconds"] / rows[k]["speaker_seconds"] for k in MODELS]
-    ax.plot(xs, ys, color="#B9C8C6", linewidth=1.8, zorder=2)
-    for x, y, color, key in zip(xs, ys, palette, MODELS):
-        ax.scatter(x, y, s=190 if key == "450h" else 125, color=color, edgecolor=COLORS["background"], linewidth=2, zorder=4)
-    offsets = [(18, -5), (18, 3), (19, -7), (19, 7)]
-    for x, y, offset, key, color in zip(xs, ys, offsets, MODELS, palette):
-        label = "VibeVoice-ASR" if key == "vanilla" else "Ours · " + key
-        ax.annotate(label, (x, y), xytext=offset, textcoords="offset points", fontsize=12, weight="bold", color=color if key != "vanilla" else COLORS["ink"])
-    ax.set(xlim=(5.5, 8.4), ylim=(5.5, 15.2), xlabel="Word error rate (%)", ylabel="Diarization error rate (%)")
-    ax.xaxis.set_major_locator(MultipleLocator(.5))
-    ax.yaxis.set_major_locator(MultipleLocator(2))
-    ax.set_xlabel("Word error rate (%)", labelpad=18)
-    ax.set_ylabel("Diarization error rate (%)", labelpad=18)
-    fig.text(.722, .623, "THE TRADEOFF", fontsize=10, weight="bold", color=COLORS["ours"])
-    fig.text(.722, .53, "Better text.\nMore speaker errors.", fontsize=20, weight="bold", linespacing=1.5)
-    fig.text(.722, .382, "450h checkpoint", fontsize=11, color=COLORS["muted"])
-    fig.text(.722, .325, f"{xs[2]:.2f}%", fontsize=26, weight="bold", color=COLORS["ours"])
-    fig.text(.84, .325, f"{ys[2]:.2f}%", fontsize=26, weight="bold", color=COLORS["ink"])
-    fig.text(.722, .288, "word errors", fontsize=10, color=COLORS["muted"])
-    fig.text(.84, .288, "speaker errors", fontsize=10, color=COLORS["muted"])
+    ax.plot(xs, ys, color="0.65", lw=.8, zorder=2)
+    for x, y, key, marker, offset in zip(xs, ys, MODELS, ["o", "^", "s", "D"], [(7, -4), (7, 1), (7, -4), (7, 0)]):
+        ax.scatter(x, y, s=35, marker=marker, color=COLORS[key], edgecolor="0.25", linewidth=.45, zorder=3)
+        ax.annotate(LABELS[key], (x, y), xytext=offset, textcoords="offset points", fontsize=9, va="center")
+    style_axes(ax, "both")
+    ax.set(xlim=(5.7, 8.4), ylim=(6.2, 14.5), xlabel="Number-normalized WER (%)",
+           ylabel="Diarization error rate (%)")
     return fig
 
 
@@ -370,6 +392,35 @@ def export_table(data):
                 ("der_250ms", "diarization_error_seconds", "speaker_seconds"),
             ]:
                 writer.writerow(["new_confirmation", name, "pooled_cs_sk", metric, row[numerator], row[denominator], 100 * row[numerator] / row[denominator]])
+        for name, row in data["checkpoint_comparison"].get("baselines", {}).items():
+            writer.writerow(["new_confirmation", name, "pooled_cs_sk", "number_normalized_wer", row["word_errors"], row["reference_words"], 100 * row["word_errors"] / row["reference_words"]])
+
+
+def update_readme_tables(data):
+    path = ROOT / "README.md"
+    if not path.exists():
+        return
+    text = path.read_text()
+    model_lines = ["| Model | Czech WER | Slovak WER | Mean WER |", "|---|---:|---:|---:|"]
+    for key in marker_keys(data):
+        row = data["commercial_comparison"]["models"][key]
+        values = [100 * row["languages"][lang]["word_errors"] / row["languages"][lang]["reference_words"] for lang in LANGUAGES]
+        model_lines.append(f"| {LABELS[key]} | {values[0]:.2f} | {values[1]:.2f} | {100 * balanced_wer(row['languages']):.2f} |")
+    checkpoint_lines = ["| Model | WER | DER | Scored recordings |", "|---|---:|---:|---:|"]
+    cohort = data["checkpoint_comparison"]
+    rows = {**cohort.get("baselines", {}), **cohort["models"]}
+    for key in (["whisper"] if "whisper" in rows else []) + list(MODELS):
+        row = rows[key]
+        wer = 100 * row["word_errors"] / row["reference_words"]
+        der = f"{100 * row['diarization_error_seconds'] / row['speaker_seconds']:.2f}" if "diarization_error_seconds" in row else "—"
+        checkpoint_lines.append(f"| {LABELS[key]} | {wer:.2f} | {der} | {row['scored']}/{row['expected']} |")
+    for tag, lines in [("MODEL", model_lines), ("CHECKPOINT", checkpoint_lines)]:
+        start, end = f"<!-- {tag}_TABLE_START -->", f"<!-- {tag}_TABLE_END -->"
+        if start in text and end in text:
+            before, rest = text.split(start, 1)
+            _, after = rest.split(end, 1)
+            text = before + start + "\n" + "\n".join(lines) + "\n" + end + after
+    path.write_text(text)
 
 
 def main():
@@ -393,7 +444,7 @@ def main():
     with PdfPages(OUT / "asr-results.pdf", metadata={"Title": "ASR — Czech & Slovak results", "Author": "lofcz/asr", "CreationDate": None, "ModDate": None}) as pdf:
         for name, build in charts:
             fig = build(data)
-            fig.savefig(OUT / f"{name}.png", dpi=180)
+            fig.savefig(OUT / f"{name}.png", dpi=300)
             svg = OUT / f"{name}.svg"
             fig.savefig(svg, metadata={"Date": None, "Creator": "lofcz/asr"})
             svg.write_text("\n".join(line.rstrip() for line in svg.read_text().splitlines()) + "\n")
@@ -402,6 +453,7 @@ def main():
             plt.close(fig)
             print(f"Saved {name}: PNG, SVG, PDF")
     export_table(data)
+    update_readme_tables(data)
     print(f"Exported chart values and the four-page PDF; evidence snapshot records {len(data['source_sha256'])} source hashes.")
 
 

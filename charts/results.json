@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "source_report_updated_at": 1792902789.150854,
   "recommended_checkpoint": "450h",
   "model_revision": "d0c9efdb8d614685062c04425d91e01b6f37d944",
@@ -51,6 +51,20 @@
             "reference_words": 832
           }
         }
+      },
+      "whisper": {
+        "label": "Whisper large-v3-turbo",
+        "type": "Open-source baseline",
+        "languages": {
+          "cs": {
+            "word_errors": 26,
+            "reference_words": 944
+          },
+          "sk": {
+            "word_errors": 22,
+            "reference_words": 832
+          }
+        }
       }
     }
   },
@@ -96,6 +110,14 @@
         "scored": 8,
         "expected": 8,
         "strict_output_valid": 8
+      }
+    },
+    "baselines": {
+      "whisper": {
+        "word_errors": 1009,
+        "reference_words": 11271,
+        "scored": 8,
+        "expected": 8
       }
     }
   },
@@ -487,7 +509,8 @@
     "The eight-recording cohort has scored outputs for all four checkpoints; it was consumed for release selection.",
     "One 450h output in that cohort is scored but not strictly valid. Scored completion and raw validity are distinct.",
     "The 450h and final models each score 32/32 main recordings and 0/2 unchunked long sessions.",
-    "Lower disagreement with machine references does not establish independent human-ground-truth accuracy or a general SOTA ranking."
+    "Lower disagreement with machine references does not establish independent human-ground-truth accuracy or a general SOTA ranking.",
+    "Whisper large-v3-turbo uses pinned official weights, FP16, beam size 5, known language, no prompt, no VAD or silence skipping; no speaker labels or DER are assigned."
   ],
   "source_sha256": {
     "experiments/periodic-eval/number_wer.py": "259df27270fb496ae2d023ef89f9a6e0c478bca39f9ebc1a92668d99bf838eb1",
@@ -509,6 +532,261 @@
     "experiments/qda-full-continuous-v8/markers/vanilla/vanilla/sk/hypothesis.json": "ca499b58964edd39b7f6c89786567665f11d503b0f846ee705f4cf177d9807d2",
     "experiments/qda-v1-release-eval/report.json": "15cab52b62b630e8da1a992149873610f7cbc3198b3a0551c78dafc1f46afcf7",
     "experiments/qda-v1-release-eval/selection.json": "6a609330dff945467b0bcf6e9c1135b2ba57cb4ab5b1cbe53f3fb7a237a0282c",
-    "experiments/qda-v1-release-eval/v1-candidate.json": "a5617357e02f6bcd4d1e4de918a3c7cd4e7e508d3de411ec371547fa9ab86044"
+    "experiments/qda-v1-release-eval/v1-candidate.json": "a5617357e02f6bcd4d1e4de918a3c7cd4e7e508d3de411ec371547fa9ab86044",
+    "experiments/whisper-large-v3-turbo/39d2f4f85cdedde2c4de9ad0.json": "ee1ec06f1287f322f12b49881800d0d21967c7f97173e2548ed5bbaff089e37f",
+    "experiments/whisper-large-v3-turbo/3ce355b505f55383060d1339.json": "00483bafdd3357897b4aa52c3e04b72da0dfc95b674ccab18a7dcea3aded03c7",
+    "experiments/whisper-large-v3-turbo/588a9bcb78fa39cfc8c12d3d.json": "f2a369485642a81a38a8b4f05ffc5bb236114e533f9f6a94825e6b0e88640502",
+    "experiments/whisper-large-v3-turbo/828d1f08726ac6928708038e.json": "626dafe8218e62d0d3f0979064157fd6330b5e1359a0b87c06de3c2072f30eed",
+    "experiments/whisper-large-v3-turbo/830678d9bcd1597cf8f4f10d.json": "3f18007821779f5fca0c17ec1cc0e97e0201ad624e82404ed4a3e3d1a950e9fe",
+    "experiments/whisper-large-v3-turbo/8394e868d0d9587be3db15d9.json": "c5dd0554e9fe88ddc0e2d0f3e22bcdcc8a87fa46b695530ae69b87cf2668c232",
+    "experiments/whisper-large-v3-turbo/8db4fb63f54849b98feb4656.json": "a23035c1859d797d6a8d03279f13765599532ce13b9c171c4aa7a9b666137140",
+    "experiments/whisper-large-v3-turbo/9fecc19c4ed2e3e3c3ef90bd.json": "6a535f6ea1b06543f529987e5099389fd3ed4723d5d9d5ce2374c192d979ae18",
+    "experiments/whisper-large-v3-turbo/marker-cs.json": "89c5581858f70b3c522a915cff50105ac016ebe4458ed1f4feb8b600cfe46559",
+    "experiments/whisper-large-v3-turbo/marker-sk.json": "0b824090e5590e90b3f41cd6ec2d666aa2fe2ca8df0c690a5cf9e839b49ee7af",
+    "experiments/whisper-large-v3-turbo/result.json": "217fda6d359578d77849046e63ffab9d33ebc03639c86de6363cdc6f45cadc7f"
+  },
+  "whisper_benchmark": {
+    "complete": true,
+    "expected": 10,
+    "scored": 10,
+    "settings": {
+      "model": "openai/whisper-large-v3-turbo",
+      "revision": "41f01f3fe87f28c78e2fbf8b568835947dd65ed9",
+      "runtime": "transformers",
+      "versions": {
+        "torch": "2.8.0+cu128",
+        "transformers": "4.51.3",
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "rapidfuzz": "3.14.6",
+        "imageio-ffmpeg": "0.6.0"
+      },
+      "dtype": "float16",
+      "decoding": {
+        "task": "transcribe",
+        "num_beams": 5,
+        "do_sample": false,
+        "temperature": 0.0,
+        "condition_on_prev_tokens": false,
+        "return_timestamps": true,
+        "max_length": 448,
+        "compression_ratio_threshold": 2.4,
+        "logprob_threshold": -1.0,
+        "no_speech_threshold": null
+      },
+      "known_language": true,
+      "external_prompt": null,
+      "vad": false,
+      "sample_rate": 16000,
+      "audio_preparation": "Full source decoded at 24 kHz; integer sample crop matching the release evaluator; polyphase resample to 16 kHz.",
+      "normalizer_sha256": "259df27270fb496ae2d023ef89f9a6e0c478bca39f9ebc1a92668d99bf838eb1",
+      "runner_sha256": "71ea6816f120e83b689508f097fe80d2d06c21e278c8922e2f84d9e57c9ab0c6",
+      "selection_sha256": "6a609330dff945467b0bcf6e9c1135b2ba57cb4ab5b1cbe53f3fb7a237a0282c",
+      "marker_manifest_sha256": "b35156e89c29d98a3fc4d9f2b4c65df8173e3e8d711e1752c78eac6182243c15",
+      "gpu": "NVIDIA RTX A5000"
+    },
+    "rows": [
+      {
+        "id": "marker-cs",
+        "cohort": "dialogue_markers",
+        "language": "cs",
+        "complete": true,
+        "duration_seconds": 364.841,
+        "source_start": 0,
+        "audio_sha256": "7aee73b94a38df92305839c55b6c00e9b1a1ba9e6d21d84851bb0973d5f57047",
+        "reference_sha256": "74f10fb2fde9c8965c474c8a0e00c8e574a555717c792b3ce3a29f0c73753e82",
+        "canonical_pcm_sha256": "4fd3980b89b53456012b8573ed8ac00c569dd7396f76a4f550d97fefd3f3b931",
+        "contract_sha256": "6c2fcf6690ad796cf0c05c828354719d523249fe6c49e2679c76b6c538fe84da",
+        "metrics": {
+          "number_normalized_wer": 0.02754237288135593,
+          "number_normalized_errors": 26,
+          "number_normalized_reference_words": 944,
+          "number_normalization_version": "cs-sk-cardinals-v1",
+          "number_normalization_language": "cs"
+        },
+        "wall_seconds": 15.52455531898886
+      },
+      {
+        "id": "marker-sk",
+        "cohort": "dialogue_markers",
+        "language": "sk",
+        "complete": true,
+        "duration_seconds": 323.83,
+        "source_start": 0,
+        "audio_sha256": "ea1c64a9aaf53946a97ca2a0d648ad52b7996235ae1c3749041605dfeb83dc40",
+        "reference_sha256": "51c2b4b0cb52b032a17e896be363e428540e76720ed5374bed49072ad4991516",
+        "canonical_pcm_sha256": "797f4fb626a5314c36cab7b3ef2465f3adcb7d509ccd6f683e3899df7e4f42aa",
+        "contract_sha256": "6c2fcf6690ad796cf0c05c828354719d523249fe6c49e2679c76b6c538fe84da",
+        "metrics": {
+          "number_normalized_wer": 0.026442307692307692,
+          "number_normalized_errors": 22,
+          "number_normalized_reference_words": 832,
+          "number_normalization_version": "cs-sk-cardinals-v1",
+          "number_normalization_language": "sk"
+        },
+        "wall_seconds": 12.072820853907615
+      },
+      {
+        "id": "9fecc19c4ed2e3e3c3ef90bd",
+        "cohort": "new-confirmation",
+        "language": "cs",
+        "complete": true,
+        "duration_seconds": 599.37,
+        "source_start": 529.77,
+        "audio_sha256": "2519b6b15f82704d90c1f184fd071459f01f34b05a066e763de40021aad14d24",
+        "reference_sha256": "e8dd5be611d1269c544a59ded23fd0c0203358ec9d917f7e522a47b4196c6693",
+        "canonical_pcm_sha256": "5703d786697dfd52f4d20dde1846c457dcca6993c5abf0ad6fb8df640a8bd6f6",
+        "contract_sha256": "6c2fcf6690ad796cf0c05c828354719d523249fe6c49e2679c76b6c538fe84da",
+        "metrics": {
+          "number_normalized_wer": 0.14652815746309458,
+          "number_normalized_errors": 268,
+          "number_normalized_reference_words": 1829,
+          "number_normalization_version": "cs-sk-cardinals-v1",
+          "number_normalization_language": "cs"
+        },
+        "wall_seconds": 29.324525095056742
+      },
+      {
+        "id": "830678d9bcd1597cf8f4f10d",
+        "cohort": "new-confirmation",
+        "language": "sk",
+        "complete": true,
+        "duration_seconds": 599.64,
+        "source_start": 869.6700000000001,
+        "audio_sha256": "16b543385f7e64ac29f8f4c9a7be5a88e886ec2bb6acf140ec18652eff3c080e",
+        "reference_sha256": "6601226c94c75fa3d583042ac42395f85a4f2871b74b19bfeefe2c91872c0d76",
+        "canonical_pcm_sha256": "3a87f9340780fe7ce9f7bf070ee7036ea74f487a18c55b1da588a8cd261a832d",
+        "contract_sha256": "6c2fcf6690ad796cf0c05c828354719d523249fe6c49e2679c76b6c538fe84da",
+        "metrics": {
+          "number_normalized_wer": 0.057919621749408984,
+          "number_normalized_errors": 98,
+          "number_normalized_reference_words": 1692,
+          "number_normalization_version": "cs-sk-cardinals-v1",
+          "number_normalization_language": "sk"
+        },
+        "wall_seconds": 29.826565926894546
+      },
+      {
+        "id": "828d1f08726ac6928708038e",
+        "cohort": "new-confirmation",
+        "language": "cs",
+        "complete": true,
+        "duration_seconds": 602.55,
+        "source_start": 1082.2199999999998,
+        "audio_sha256": "25a87924762a741c02ac7a4488a9d8f249fbab5a105093f34d831b42baa6903f",
+        "reference_sha256": "b55cbf0712f36844901291e5375295592df8ce68acef17a7041c7055323b70f3",
+        "canonical_pcm_sha256": "90b4b5abc124a1124e88960ea97adc0e8ff014488dddd721c71cf896048c64dd",
+        "contract_sha256": "6c2fcf6690ad796cf0c05c828354719d523249fe6c49e2679c76b6c538fe84da",
+        "metrics": {
+          "number_normalized_wer": 0.05877862595419847,
+          "number_normalized_errors": 77,
+          "number_normalized_reference_words": 1310,
+          "number_normalization_version": "cs-sk-cardinals-v1",
+          "number_normalization_language": "cs"
+        },
+        "wall_seconds": 22.013561878120527
+      },
+      {
+        "id": "8394e868d0d9587be3db15d9",
+        "cohort": "new-confirmation",
+        "language": "sk",
+        "complete": true,
+        "duration_seconds": 599.13,
+        "source_start": 282.81,
+        "audio_sha256": "6ba1846ee48601d3d1e875fdae41d55cca64c2e5bc0d58142ec9b1e6747963ec",
+        "reference_sha256": "71dfaccad4cc65934727df6dd82eed2ac5a0e4b5ed57706d31b2b7871b9575ea",
+        "canonical_pcm_sha256": "cfca43557736ad980e9c617ddc70b71b125342e27a278fab8fe6e527e4a0dec0",
+        "contract_sha256": "6c2fcf6690ad796cf0c05c828354719d523249fe6c49e2679c76b6c538fe84da",
+        "metrics": {
+          "number_normalized_wer": 0.09586466165413533,
+          "number_normalized_errors": 153,
+          "number_normalized_reference_words": 1596,
+          "number_normalization_version": "cs-sk-cardinals-v1",
+          "number_normalization_language": "sk"
+        },
+        "wall_seconds": 27.227548158960417
+      },
+      {
+        "id": "39d2f4f85cdedde2c4de9ad0",
+        "cohort": "new-confirmation",
+        "language": "cs",
+        "complete": true,
+        "duration_seconds": 598.62,
+        "source_start": 209.88,
+        "audio_sha256": "990f0a6cc073b89709ac9075dc098879cf7c442657f1530a062a83ceeb1d5336",
+        "reference_sha256": "a35a6a5dc8fa57bfb6220e2777c2042e808d99f0de0af60d48e92d716e8b6061",
+        "canonical_pcm_sha256": "7223027b55693561f66bdeb4c47492d95478d00dc4aeb3d21a17d9cba1f5cbff",
+        "contract_sha256": "6c2fcf6690ad796cf0c05c828354719d523249fe6c49e2679c76b6c538fe84da",
+        "metrics": {
+          "number_normalized_wer": 0.06290849673202614,
+          "number_normalized_errors": 77,
+          "number_normalized_reference_words": 1224,
+          "number_normalization_version": "cs-sk-cardinals-v1",
+          "number_normalization_language": "cs"
+        },
+        "wall_seconds": 20.7041946798563
+      },
+      {
+        "id": "3ce355b505f55383060d1339",
+        "cohort": "new-confirmation",
+        "language": "sk",
+        "complete": true,
+        "duration_seconds": 606.0,
+        "source_start": 241.82999999999998,
+        "audio_sha256": "d9dda4072683393f1ecf49cb9c6040ff692d17320396314683a284ee4b012b17",
+        "reference_sha256": "89c6c16a1f08866999d39c3d7969eb6ddeeb356822985e5511f3a8fef2324720",
+        "canonical_pcm_sha256": "818cc240d1d310e61f8465c96db57f779ee154a32eb474bcc2ab6c76f81edb8f",
+        "contract_sha256": "6c2fcf6690ad796cf0c05c828354719d523249fe6c49e2679c76b6c538fe84da",
+        "metrics": {
+          "number_normalized_wer": 0.0782312925170068,
+          "number_normalized_errors": 115,
+          "number_normalized_reference_words": 1470,
+          "number_normalization_version": "cs-sk-cardinals-v1",
+          "number_normalization_language": "sk"
+        },
+        "wall_seconds": 27.24547235807404
+      },
+      {
+        "id": "588a9bcb78fa39cfc8c12d3d",
+        "cohort": "new-confirmation",
+        "language": "cs",
+        "complete": true,
+        "duration_seconds": 601.32,
+        "source_start": 3313.23,
+        "audio_sha256": "fc0e3b46061fbb73e1f61de1bdd4ebc7dc6d38031d59a2fba39cf88733af701d",
+        "reference_sha256": "75db45d8f8e6e0277bc1fb55648a93cf659630a5050f7e7660b5508655edaa2e",
+        "canonical_pcm_sha256": "5b1b6b22d17a72d1215f6dca260c1b6bbea960d599af3052036e8f8818f5e67b",
+        "contract_sha256": "6c2fcf6690ad796cf0c05c828354719d523249fe6c49e2679c76b6c538fe84da",
+        "metrics": {
+          "number_normalized_wer": 0.08988057825267128,
+          "number_normalized_errors": 143,
+          "number_normalized_reference_words": 1591,
+          "number_normalization_version": "cs-sk-cardinals-v1",
+          "number_normalization_language": "cs"
+        },
+        "wall_seconds": 33.99138899799436
+      },
+      {
+        "id": "8db4fb63f54849b98feb4656",
+        "cohort": "new-confirmation",
+        "language": "sk",
+        "complete": true,
+        "duration_seconds": 583.17,
+        "source_start": 547.1400000000001,
+        "audio_sha256": "e421aa1be57e651f50ccc4ffa4ff100d4c82b9fa2edf8dce55dede6577a3cb47",
+        "reference_sha256": "1adbbb17eb6b6e5c8d4516ea26582f22311fa0e5418b57c27554a35a9cc79464",
+        "canonical_pcm_sha256": "d33cd36afcc49530e24e7a792d7cd20a181acec537c9315634dd81e9dc729b2d",
+        "contract_sha256": "6c2fcf6690ad796cf0c05c828354719d523249fe6c49e2679c76b6c538fe84da",
+        "metrics": {
+          "number_normalized_wer": 0.13953488372093023,
+          "number_normalized_errors": 78,
+          "number_normalized_reference_words": 559,
+          "number_normalization_version": "cs-sk-cardinals-v1",
+          "number_normalization_language": "sk"
+        },
+        "wall_seconds": 13.6978223498445
+      }
+    ],
+    "created_at": 1793834659.8666246
   }
 }
