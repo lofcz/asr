@@ -1,0 +1,52 @@
+{
+  "model_name": "VibeVoice-CSK1",
+  "base_model": "microsoft/VibeVoice-ASR",
+  "base_revision": "d0c9efdb8d614685062c04425d91e01b6f37d944",
+  "tokenizer": "Qwen/Qwen2.5-7B",
+  "tokenizer_revision": "d149729398750b98c0af14eb82c78cfe92750796",
+  "vibevoice_revision": "16fb2cb1217c9934a886e1948ffb06120caa2df5",
+  "checkpoint": "450h",
+  "step": 2564,
+  "adapter_sha256": "6a43720eec9a7b75ceb1bc80d709ed539f45c1a8f1dd5ba7ef7168581bdf1b1b",
+  "adapter_config_sha256": "85911cc9ffabefbf1dd4f7f8e7c8339167223774617cf9e50ae538bf327e9add",
+  "dtype": "bfloat16",
+  "merge": "PeftModel.merge_and_unload()",
+  "lora_layers": 196,
+  "state_tensors": 1177,
+  "parameters": 8674021857,
+  "validation": {
+    "full_state_schema": true,
+    "sample_lora_update_exact": true,
+    "frozen_speech_samples_unchanged": true,
+    "no_adapter_tensors": true
+  },
+  "versions": {
+    "torch": "2.8.0+cu128",
+    "transformers": "4.51.3",
+    "peft": "0.17.1",
+    "safetensors": "0.8.0",
+    "huggingface_hub": "0.36.2"
+  },
+  "sha256": {
+    "added_tokens.json": "58b54bbe36fc752f79a24a271ef66a0a0830054b4dfad94bde757d851968060b",
+    "config.json": "0cfcc5f25a93015015ece0e99bdd17c9c614a4368f36c4871827ad10d4764d5b",
+    "generation_config.json": "a056282ddb08f4b1246c7979cc6c2419b67bfaa49d8cdaa98f79ee38cf5ea284",
+    "merges.txt": "8831e4f1a044471340f7c0a83d7bd71306a5b867e95fd870f74d0c5308a904d5",
+    "model-00001-of-00010.safetensors": "03dbdeca2a734840ed2cb9f87030801df24c1010ba0fed6bd018d68fd4e151b6",
+    "model-00002-of-00010.safetensors": "e8d2608727493db0a493c1b606bd9506f73a6ff82ad0d8306475274e7cf4700b",
+    "model-00003-of-00010.safetensors": "10927a585cb3ec92818a5efeae965976171e95c756915c397d08ed0ce898aba1",
+    "model-00004-of-00010.safetensors": "3c42dda35b5ebd98cfce362bca57c490fe33b72639814f247498d62e39295d39",
+    "model-00005-of-00010.safetensors": "616d0f1c63a8f1b3a58a02ff7b7745c0814f1f009c2b8cc143e4d401ad7e204d",
+    "model-00006-of-00010.safetensors": "2920346d1eb5d41da4fe9430f378273e3c3988b2ec66026d7a76dacc16c9ed02",
+    "model-00007-of-00010.safetensors": "fa0f2bd6d5d8c60b5057e201c9666e5965c9990a61141fc3683ad2709daf7d7e",
+    "model-00008-of-00010.safetensors": "d6220338abd85ddf1a954090b29b2fbedac123ff634aa2e6413d977f4a9365e1",
+    "model-00009-of-00010.safetensors": "69e36536fa616824585e9036f76d4e1d1e835f8b9ae21c6e143fc69117bb9411",
+    "model-00010-of-00010.safetensors": "b994568942faad74db348264e454521cdecddda6633a3b576515ec9ba8b8f0c3",
+    "model.safetensors.index.json": "a4b5047895d3b4f4ed3a6ba5b3e5b340f9412609d327b43f628323ea341042d8",
+    "preprocessor_config.json": "94ea610e9d47f701a691f73d53e0f822cf5f17e46dfc73c7e992c6d9e2243073",
+    "special_tokens_map.json": "0533d5e779eaa5955cd1ab76d85faa0e9dc2c56bcf81c5483de731634de4694a",
+    "tokenizer.json": "9c5ae00e602b8860cbd784ba82a8aa14e8feecec692e7076590d014d7b7fdafa",
+    "tokenizer_config.json": "499b9bf5694ff2b04bbec69e35315a3414551735d5a90aebd0a1f9882a15697d",
+    "vocab.json": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910"
+  }
+}

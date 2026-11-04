@@ -1,0 +1,26 @@
+{
+  "offline_reload": true,
+  "strict_weight_loading": true,
+  "audio_tests": [
+    {
+      "language": "cs",
+      "duration_seconds": 20,
+      "complete": true,
+      "segments": 4,
+      "generated_tokens": 240,
+      "elapsed_seconds": 6.89
+    },
+    {
+      "language": "sk",
+      "duration_seconds": 20,
+      "complete": true,
+      "segments": 3,
+      "generated_tokens": 211,
+      "elapsed_seconds": 5.6
+    }
+  ],
+  "truncation_detected": true,
+  "gpu": "NVIDIA RTX A5000",
+  "peak_cuda_memory_gib": 16.51,
+  "elapsed_seconds": 16.32
+}

@@ -1,0 +1,9 @@
+torch==2.8.0
+transformers==4.51.3
+accelerate==1.10.1
+huggingface-hub==0.36.2
+safetensors==0.8.0
+diffusers==0.39.0
+librosa==1.0.0
+soundfile==0.14.0
+vibevoice @ git+https://github.com/microsoft/VibeVoice.git@16fb2cb1217c9934a886e1948ffb06120caa2df5
