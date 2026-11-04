@@ -1,0 +1,514 @@
+{
+  "schema_version": 1,
+  "source_report_updated_at": 1792902789.150854,
+  "recommended_checkpoint": "450h",
+  "model_revision": "d0c9efdb8d614685062c04425d91e01b6f37d944",
+  "commercial_comparison": {
+    "reference": "Soniox",
+    "aggregation": "Equal-weight mean of Czech and Slovak number-normalized word disagreement",
+    "normalization": "cs-sk-cardinals-v1",
+    "recordings": 2,
+    "duration_seconds": 688.671,
+    "models": {
+      "vanilla": {
+        "label": "VibeVoice-ASR",
+        "type": "Open-source baseline",
+        "languages": {
+          "cs": {
+            "word_errors": 22,
+            "reference_words": 944
+          },
+          "sk": {
+            "word_errors": 15,
+            "reference_words": 832
+          }
+        }
+      },
+      "450h": {
+        "label": "ASR · ours",
+        "type": "Open-source · QLoRA 450h",
+        "languages": {
+          "cs": {
+            "word_errors": 10,
+            "reference_words": 944
+          },
+          "sk": {
+            "word_errors": 6,
+            "reference_words": 832
+          }
+        }
+      },
+      "gemini": {
+        "label": "Gemini 4 Argon",
+        "type": "Commercial",
+        "languages": {
+          "cs": {
+            "word_errors": 8,
+            "reference_words": 944
+          },
+          "sk": {
+            "word_errors": 0,
+            "reference_words": 832
+          }
+        }
+      }
+    }
+  },
+  "checkpoint_comparison": {
+    "cohort": "new-confirmation",
+    "recordings": 8,
+    "duration_minutes": 79.83,
+    "reference_words": 11271,
+    "aggregation": "Pooled word edits / reference words; pooled speaker-error seconds / scored speaker seconds",
+    "models": {
+      "vanilla": {
+        "word_errors": 848,
+        "reference_words": 11271,
+        "diarization_error_seconds": 301.90000000000003,
+        "speaker_seconds": 4230.54,
+        "scored": 8,
+        "expected": 8,
+        "strict_output_valid": 8
+      },
+      "300h": {
+        "word_errors": 734,
+        "reference_words": 11271,
+        "diarization_error_seconds": 427.89,
+        "speaker_seconds": 4230.54,
+        "scored": 8,
+        "expected": 8,
+        "strict_output_valid": 8
+      },
+      "450h": {
+        "word_errors": 681,
+        "reference_words": 11271,
+        "diarization_error_seconds": 493.83,
+        "speaker_seconds": 4230.54,
+        "scored": 8,
+        "expected": 8,
+        "strict_output_valid": 7
+      },
+      "final": {
+        "word_errors": 677,
+        "reference_words": 11271,
+        "diarization_error_seconds": 576.34,
+        "speaker_seconds": 4230.54,
+        "scored": 8,
+        "expected": 8,
+        "strict_output_valid": 8
+      }
+    }
+  },
+  "release_summary": {
+    "main_recordings": 32,
+    "main_minutes": 319.1205,
+    "models": {
+      "300h": {
+        "main": {
+          "expected": 32,
+          "finished": 32,
+          "scored": 28,
+          "failures": 4,
+          "strict_output_valid": 27,
+          "number_normalized_wer": 0.08006017441177161,
+          "number_normalized_errors": 3406,
+          "reference_words": 42543,
+          "ordinary_wer": 0.08066373657367147,
+          "ordinary_errors": 3432,
+          "ordinary_reference_words": 42547,
+          "der_250ms": 0.10788020857612829,
+          "diarization_error_seconds": 1619.94,
+          "speaker_seconds": 15016.1,
+          "metric_scope": "Completed valid outputs only; pending/failed recordings remain explicit and are not assigned fabricated WER"
+        },
+        "long": {
+          "expected": 2,
+          "finished": 2,
+          "scored": 0,
+          "failures": 2,
+          "strict_output_valid": 0,
+          "metric_scope": "Completed valid outputs only; pending/failed recordings remain explicit and are not assigned fabricated WER"
+        },
+        "balanced_language_wer": 0.07991931619216876
+      },
+      "450h": {
+        "main": {
+          "expected": 32,
+          "finished": 32,
+          "scored": 32,
+          "failures": 0,
+          "strict_output_valid": 30,
+          "number_normalized_wer": 0.07543287838663679,
+          "number_normalized_errors": 3703,
+          "reference_words": 49090,
+          "ordinary_wer": 0.07624149590581333,
+          "ordinary_errors": 3743,
+          "ordinary_reference_words": 49094,
+          "der_250ms": 0.10563187744047632,
+          "diarization_error_seconds": 1808.16,
+          "speaker_seconds": 17117.56,
+          "metric_scope": "All expected recordings"
+        },
+        "long": {
+          "expected": 2,
+          "finished": 2,
+          "scored": 0,
+          "failures": 2,
+          "strict_output_valid": 0,
+          "metric_scope": "Completed valid outputs only; pending/failed recordings remain explicit and are not assigned fabricated WER"
+        },
+        "balanced_language_wer": 0.07540202483385605
+      },
+      "final": {
+        "main": {
+          "expected": 32,
+          "finished": 32,
+          "scored": 32,
+          "failures": 0,
+          "strict_output_valid": 31,
+          "number_normalized_wer": 0.07441434100631493,
+          "number_normalized_errors": 3653,
+          "reference_words": 49090,
+          "ordinary_wer": 0.07510082698496762,
+          "ordinary_errors": 3687,
+          "ordinary_reference_words": 49094,
+          "der_250ms": 0.11381470256274842,
+          "diarization_error_seconds": 1948.23,
+          "speaker_seconds": 17117.56,
+          "metric_scope": "All expected recordings"
+        },
+        "long": {
+          "expected": 2,
+          "finished": 2,
+          "scored": 0,
+          "failures": 2,
+          "strict_output_valid": 0,
+          "metric_scope": "Completed valid outputs only; pending/failed recordings remain explicit and are not assigned fabricated WER"
+        },
+        "balanced_language_wer": 0.07438937101628507
+      },
+      "vanilla": {
+        "main": {
+          "expected": 32,
+          "finished": 32,
+          "scored": 31,
+          "failures": 1,
+          "strict_output_valid": 31,
+          "number_normalized_wer": 0.10273029590561522,
+          "number_normalized_errors": 4850,
+          "reference_words": 47211,
+          "ordinary_wer": 0.10322990575029121,
+          "ordinary_errors": 4874,
+          "ordinary_reference_words": 47215,
+          "der_250ms": 0.07806410485495033,
+          "diarization_error_seconds": 1293.16,
+          "speaker_seconds": 16565.36,
+          "metric_scope": "Completed valid outputs only; pending/failed recordings remain explicit and are not assigned fabricated WER"
+        },
+        "long": {
+          "expected": 2,
+          "finished": 2,
+          "scored": 1,
+          "failures": 1,
+          "strict_output_valid": 1,
+          "number_normalized_wer": 0.14149632863663425,
+          "number_normalized_errors": 713,
+          "reference_words": 5039,
+          "ordinary_wer": 0.14166666666666666,
+          "ordinary_errors": 714,
+          "ordinary_reference_words": 5040,
+          "der_250ms": 0.07225594437881072,
+          "diarization_error_seconds": 106.42,
+          "speaker_seconds": 1472.82,
+          "metric_scope": "Completed valid outputs only; pending/failed recordings remain explicit and are not assigned fabricated WER"
+        },
+        "balanced_language_wer": 0.10283375915459086
+      }
+    },
+    "recommendation": {
+      "checkpoint": "450h",
+      "text_best_point_estimate": "final",
+      "statistically_unresolved_candidates": [
+        "final",
+        "450h"
+      ],
+      "rule": "Prioritize completed main clips and lower balanced-language WER. When paired show-cluster differences include zero, favor completed long sessions then lower DER.",
+      "main_all_completed": true,
+      "long_all_completed": false,
+      "automatic_deployment": false
+    },
+    "comparisons": {
+      "vanilla→300h": {
+        "record_id": {
+          "matched_recordings": 27,
+          "cluster": "record_id",
+          "clusters_by_language": {
+            "cs": 15,
+            "sk": 12
+          },
+          "draws": 10000,
+          "balanced_language_wer_delta_95": [
+            -0.03314508146079903,
+            -0.01789910741659886
+          ],
+          "der_delta_95": [
+            -0.0008529209253241433,
+            0.052182338021399044
+          ],
+          "direction": "second model minus first; negative favors second",
+          "limitation": "Paired descriptive uncertainty during checkpoint selection; not a blind post-selection significance claim."
+        },
+        "show": {
+          "matched_recordings": 27,
+          "cluster": "show",
+          "clusters_by_language": {
+            "cs": 13,
+            "sk": 7
+          },
+          "draws": 10000,
+          "balanced_language_wer_delta_95": [
+            -0.032495066347016516,
+            -0.017644067637758085
+          ],
+          "der_delta_95": [
+            -0.0003326196938686812,
+            0.048860390314850066
+          ],
+          "direction": "second model minus first; negative favors second",
+          "limitation": "Paired descriptive uncertainty during checkpoint selection; not a blind post-selection significance claim."
+        }
+      },
+      "vanilla→450h": {
+        "record_id": {
+          "matched_recordings": 31,
+          "cluster": "record_id",
+          "clusters_by_language": {
+            "cs": 16,
+            "sk": 15
+          },
+          "draws": 10000,
+          "balanced_language_wer_delta_95": [
+            -0.03561618127777018,
+            -0.021712828070266994
+          ],
+          "der_delta_95": [
+            -0.004038787874861659,
+            0.05723360609611976
+          ],
+          "direction": "second model minus first; negative favors second",
+          "limitation": "Paired descriptive uncertainty during checkpoint selection; not a blind post-selection significance claim."
+        },
+        "show": {
+          "matched_recordings": 31,
+          "cluster": "show",
+          "clusters_by_language": {
+            "cs": 13,
+            "sk": 8
+          },
+          "draws": 10000,
+          "balanced_language_wer_delta_95": [
+            -0.03416551629001963,
+            -0.02184399508488053
+          ],
+          "der_delta_95": [
+            -0.0024144442591633813,
+            0.05371679170976849
+          ],
+          "direction": "second model minus first; negative favors second",
+          "limitation": "Paired descriptive uncertainty during checkpoint selection; not a blind post-selection significance claim."
+        }
+      },
+      "vanilla→final": {
+        "record_id": {
+          "matched_recordings": 31,
+          "cluster": "record_id",
+          "clusters_by_language": {
+            "cs": 16,
+            "sk": 15
+          },
+          "draws": 10000,
+          "balanced_language_wer_delta_95": [
+            -0.03681183039736662,
+            -0.0227551561184982
+          ],
+          "der_delta_95": [
+            0.013062507192700927,
+            0.05906462805667107
+          ],
+          "direction": "second model minus first; negative favors second",
+          "limitation": "Paired descriptive uncertainty during checkpoint selection; not a blind post-selection significance claim."
+        },
+        "show": {
+          "matched_recordings": 31,
+          "cluster": "show",
+          "clusters_by_language": {
+            "cs": 13,
+            "sk": 8
+          },
+          "draws": 10000,
+          "balanced_language_wer_delta_95": [
+            -0.03521467135769957,
+            -0.02285041375480875
+          ],
+          "der_delta_95": [
+            0.017476672379544127,
+            0.053833759509677025
+          ],
+          "direction": "second model minus first; negative favors second",
+          "limitation": "Paired descriptive uncertainty during checkpoint selection; not a blind post-selection significance claim."
+        }
+      },
+      "300h→450h": {
+        "record_id": {
+          "matched_recordings": 28,
+          "cluster": "record_id",
+          "clusters_by_language": {
+            "cs": 15,
+            "sk": 13
+          },
+          "draws": 10000,
+          "balanced_language_wer_delta_95": [
+            -0.008998715787480656,
+            -0.0019474044401124428
+          ],
+          "der_delta_95": [
+            -0.009175182218632755,
+            0.012464295559868794
+          ],
+          "direction": "second model minus first; negative favors second",
+          "limitation": "Paired descriptive uncertainty during checkpoint selection; not a blind post-selection significance claim."
+        },
+        "show": {
+          "matched_recordings": 28,
+          "cluster": "show",
+          "clusters_by_language": {
+            "cs": 13,
+            "sk": 8
+          },
+          "draws": 10000,
+          "balanced_language_wer_delta_95": [
+            -0.009906351245381875,
+            -0.002361386396592373
+          ],
+          "der_delta_95": [
+            -0.009546023783489909,
+            0.012945901839051937
+          ],
+          "direction": "second model minus first; negative favors second",
+          "limitation": "Paired descriptive uncertainty during checkpoint selection; not a blind post-selection significance claim."
+        }
+      },
+      "300h→final": {
+        "record_id": {
+          "matched_recordings": 28,
+          "cluster": "record_id",
+          "clusters_by_language": {
+            "cs": 15,
+            "sk": 13
+          },
+          "draws": 10000,
+          "balanced_language_wer_delta_95": [
+            -0.01008173556039818,
+            -0.0025590548135691073
+          ],
+          "der_delta_95": [
+            -0.002692957375622321,
+            0.03292148539451929
+          ],
+          "direction": "second model minus first; negative favors second",
+          "limitation": "Paired descriptive uncertainty during checkpoint selection; not a blind post-selection significance claim."
+        },
+        "show": {
+          "matched_recordings": 28,
+          "cluster": "show",
+          "clusters_by_language": {
+            "cs": 13,
+            "sk": 8
+          },
+          "draws": 10000,
+          "balanced_language_wer_delta_95": [
+            -0.010656266719948244,
+            -0.0028235887882827426
+          ],
+          "der_delta_95": [
+            -0.002475812976548508,
+            0.033693275026858566
+          ],
+          "direction": "second model minus first; negative favors second",
+          "limitation": "Paired descriptive uncertainty during checkpoint selection; not a blind post-selection significance claim."
+        }
+      },
+      "450h→final": {
+        "record_id": {
+          "matched_recordings": 32,
+          "cluster": "record_id",
+          "clusters_by_language": {
+            "cs": 16,
+            "sk": 16
+          },
+          "draws": 10000,
+          "balanced_language_wer_delta_95": [
+            -0.0028480691457162368,
+            0.0006427562364779851
+          ],
+          "der_delta_95": [
+            -0.0053636280053738,
+            0.026812952401160186
+          ],
+          "direction": "second model minus first; negative favors second",
+          "limitation": "Paired descriptive uncertainty during checkpoint selection; not a blind post-selection significance claim."
+        },
+        "show": {
+          "matched_recordings": 32,
+          "cluster": "show",
+          "clusters_by_language": {
+            "cs": 13,
+            "sk": 8
+          },
+          "draws": 10000,
+          "balanced_language_wer_delta_95": [
+            -0.0028594013222897254,
+            0.0009182203741388856
+          ],
+          "der_delta_95": [
+            -0.005524210502333694,
+            0.02808158960696376
+          ],
+          "direction": "second model minus first; negative favors second",
+          "limitation": "Paired descriptive uncertainty during checkpoint selection; not a blind post-selection significance claim."
+        }
+      }
+    }
+  },
+  "methodology": [
+    "Soniox machine transcripts are the reference, not an independently scored competitor.",
+    "Commercial comparison uses two generated dialogues, excluded from training but repeatedly used as development markers.",
+    "Gemini is the independent transcription saved before adjudication; its score is recomputed with the same normalizer as ours.",
+    "The eight-recording cohort has scored outputs for all four checkpoints; it was consumed for release selection.",
+    "One 450h output in that cohort is scored but not strictly valid. Scored completion and raw validity are distinct.",
+    "The 450h and final models each score 32/32 main recordings and 0/2 unchunked long sessions.",
+    "Lower disagreement with machine references does not establish independent human-ground-truth accuracy or a general SOTA ranking."
+  ],
+  "source_sha256": {
+    "experiments/periodic-eval/number_wer.py": "259df27270fb496ae2d023ef89f9a6e0c478bca39f9ebc1a92668d99bf838eb1",
+    "experiments/production-reference-audit-v2/cs/audit.json": "e12d5e145dc070663fbe6841de3cf34bdc748af005dac4ad5e0997bc48131fd5",
+    "experiments/production-reference-audit-v2/cs/gemini-independent.parsed.json": "b3b9f0c79a0333aae7d7fc7cf288977ac31f2b9d87ccb2dfa147b03d84a07b28",
+    "experiments/production-reference-audit-v2/cs/gemini-independent.raw.json": "25a92c6cc0f411333a6c145cf57a93d54769180be84b0bd4f149dfaa5d0bf0cf",
+    "experiments/production-reference-audit-v2/cs/gold-approval.json": "701f9feefc4da87a0034548a9eeeda5a95f613bcb126b5a438e635e431332539",
+    "experiments/production-reference-audit-v2/cs/gold.reference.json": "74f10fb2fde9c8965c474c8a0e00c8e574a555717c792b3ce3a29f0c73753e82",
+    "experiments/production-reference-audit-v2/sk/audit.json": "d491131d7f97e2dd338e039d3845b77795dd1f4c49b4f26045310d33c75645ec",
+    "experiments/production-reference-audit-v2/sk/gemini-independent.parsed.json": "5aac528e6e66907ccec8a31c8828b808506661fe9b4ada444466088b2bd68e39",
+    "experiments/production-reference-audit-v2/sk/gemini-independent.raw.json": "a42bb3f1bbc44e5a7d436da8ab11333ba6be22905d29ae11695c985c385fe9bc",
+    "experiments/production-reference-audit-v2/sk/gold-approval.json": "7173f9f9a0ba0694047fd609ef064ea2002c203a8abfb5b6f203a623f6e1213e",
+    "experiments/production-reference-audit-v2/sk/gold.reference.json": "51c2b4b0cb52b032a17e896be363e428540e76720ed5374bed49072ad4991516",
+    "experiments/qda-full-continuous-v8/markers/r64-full-450h/completed-v3.json": "aa70c566cbfca8cb8add4960eeb286c15b2588d51d22feecfa5cb325e1f6436d",
+    "experiments/qda-full-continuous-v8/markers/r64-full-450h/finetuned/cs/hypothesis.json": "6471c6b849ca3f6a6875caf4fa0173771f1894ff6b74b03f4ed252e1931357bb",
+    "experiments/qda-full-continuous-v8/markers/r64-full-450h/finetuned/sk/hypothesis.json": "4de39a3cf5310f88a0cc0fe3a45ec14dc7a33254e75fa170d23a00f603648124",
+    "experiments/qda-full-continuous-v8/markers/vanilla/completed-v3.json": "66337304b5740fb3122248044390830590d960e3fdc438e228776ab2e05580cd",
+    "experiments/qda-full-continuous-v8/markers/vanilla/vanilla/cs/hypothesis.json": "129688cb52cd3f08b005403e8ebf543f990ace11fcccb7cece3309c9cb6151ac",
+    "experiments/qda-full-continuous-v8/markers/vanilla/vanilla/sk/hypothesis.json": "ca499b58964edd39b7f6c89786567665f11d503b0f846ee705f4cf177d9807d2",
+    "experiments/qda-v1-release-eval/report.json": "15cab52b62b630e8da1a992149873610f7cbc3198b3a0551c78dafc1f46afcf7",
+    "experiments/qda-v1-release-eval/selection.json": "6a609330dff945467b0bcf6e9c1135b2ba57cb4ab5b1cbe53f3fb7a237a0282c",
+    "experiments/qda-v1-release-eval/v1-candidate.json": "a5617357e02f6bcd4d1e4de918a3c7cd4e7e508d3de411ec371547fa9ab86044"
+  }
+}
